@@ -41,6 +41,12 @@
     /* This ensures the input doesn't inline with other elements */
 }
 
+/* Loading indicator */
+.loading {
+    text-align: center;
+    padding: 1rem;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .search-input {
