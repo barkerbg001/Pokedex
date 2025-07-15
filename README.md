@@ -23,7 +23,7 @@ To install Pokedex using Bun, follow these steps:
    ```
 2. Navigate to the project directory:
    ```bash
-   cd pokedex
+   cd Pokedex
    ```
 3. Install the necessary packages using Bun:
    ```bash
