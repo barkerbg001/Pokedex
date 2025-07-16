@@ -113,6 +113,50 @@ function PokemonDetail({ pokemon, onClose }) {
             </section>
           </div>
         </div>
+    <div className="modal">
+      <div className="modal-content">
+        <button className="close-button" onClick={onClose}>
+          Close
+        </button>
+        <h2>{pokemon.name}</h2>
+        <img src={pokemon.sprites.front_default} alt={pokemon.name} />
+        <h3>Stats</h3>
+        <ul>
+          {pokemon.stats.map(s => (
+            <li key={s.stat.name}>
+              {s.stat.name}: {s.base_stat}
+            </li>
+          ))}
+        </ul>
+        <h3>Abilities</h3>
+        <ul>
+          {pokemon.abilities.map(a => (
+            <li key={a.ability.name}>
+              {a.ability.name}
+              {a.is_hidden ? ' (Hidden)' : ''}
+            </li>
+          ))}
+        </ul>
+        <h3>Evolution Chain</h3>
+        <ul>
+          {evolution.map(e => (
+            <li key={e.name}>
+              Stage {e.stage}: {e.name}
+            </li>
+          ))}
+        </ul>
+        <h3>Moves</h3>
+        <ul className="moves-list">
+          {pokemon.moves.map(m => (
+            <li key={m.move.name}>
+              {m.move.name} - {m.version_group_details[0].move_learn_method.name}
+            </li>
+          ))}
+        </ul>
+        <h3>Type Effectiveness</h3>
+        <p>Weak to: {typeEffectiveness.weak && typeEffectiveness.weak.join(', ')}</p>
+        <p>Resistant to: {typeEffectiveness.resistant && typeEffectiveness.resistant.join(', ')}</p>
+        <p>Immune to: {typeEffectiveness.immune && typeEffectiveness.immune.join(', ')}</p>
       </div>
     </div>
   );
