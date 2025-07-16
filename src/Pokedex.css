@@ -47,6 +47,21 @@
     padding: 1rem;
 }
 
+.filters {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.filters input,
+.filters select {
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .search-input {
