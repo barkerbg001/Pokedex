@@ -39,6 +39,80 @@ function PokemonDetail({ pokemon, onClose }) {
   }, [pokemon]);
 
   return (
+    <div className="modal" role="dialog" aria-modal="true">
+      <div className="modal-content">
+        <div className="detail-header">
+          <h2 className="pokemon-name">{pokemon.name}</h2>
+          <button className="close-button" onClick={onClose} aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <div className="detail-body">
+          <div className="basic-info">
+            <img
+              className="pokemon-image"
+              src={pokemon.sprites.front_default}
+              alt={pokemon.name}
+            />
+            <ul className="stats">
+              {pokemon.stats.map(s => (
+                <li key={s.stat.name} className="stat">
+                  <span className="stat-name">{s.stat.name}</span>
+                  <span className="stat-value">{s.base_stat}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="extra-info">
+            <section>
+              <h3>Abilities</h3>
+              <ul className="abilities-list">
+                {pokemon.abilities.map(a => (
+                  <li key={a.ability.name}>
+                    {a.ability.name}
+                    {a.is_hidden ? ' (Hidden)' : ''}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section>
+              <h3>Evolution Chain</h3>
+              <ul className="evolution-list">
+                {evolution.map(e => (
+                  <li key={e.name}>
+                    Stage {e.stage}: {e.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section>
+              <h3>Moves</h3>
+              <ul className="moves-list">
+                {pokemon.moves.map(m => (
+                  <li key={m.move.name}>
+                    {m.move.name} - {m.version_group_details[0].move_learn_method.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="type-effectiveness">
+              <h3>Type Effectiveness</h3>
+              <p>
+                Weak to:{' '}
+                {typeEffectiveness.weak && typeEffectiveness.weak.join(', ')}
+              </p>
+              <p>
+                Resistant to:{' '}
+                {typeEffectiveness.resistant &&
+                  typeEffectiveness.resistant.join(', ')}
+              </p>
+              <p>
+                Immune to:{' '}
+                {typeEffectiveness.immune && typeEffectiveness.immune.join(', ')}
+              </p>
+            </section>
+          </div>
+        </div>
     <div className="modal">
       <div className="modal-content">
         <button className="close-button" onClick={onClose}>
