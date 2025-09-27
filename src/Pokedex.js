@@ -3,6 +3,104 @@ import axios from 'axios';
 import './Pokedex.css';
 import PokemonDetail from './PokemonDetail';
 
+// Mock data for demonstration when API is not available
+const mockPokemonData = [
+  {
+    id: 1,
+    name: 'bulbasaur',
+    sprites: {
+      front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'
+    },
+    types: [
+      { type: { name: 'grass', url: 'https://pokeapi.co/api/v2/type/12/' } },
+      { type: { name: 'poison', url: 'https://pokeapi.co/api/v2/type/4/' } }
+    ],
+    stats: [
+      { stat: { name: 'hp' }, base_stat: 45 },
+      { stat: { name: 'attack' }, base_stat: 49 },
+      { stat: { name: 'defense' }, base_stat: 49 },
+      { stat: { name: 'special-attack' }, base_stat: 65 },
+      { stat: { name: 'special-defense' }, base_stat: 65 },
+      { stat: { name: 'speed' }, base_stat: 45 }
+    ],
+    abilities: [
+      { ability: { name: 'overgrow' }, is_hidden: false },
+      { ability: { name: 'chlorophyll' }, is_hidden: true }
+    ],
+    moves: [
+      { move: { name: 'razor-wind' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
+      { move: { name: 'swords-dance' }, version_group_details: [{ move_learn_method: { name: 'machine' } }] },
+      { move: { name: 'cut' }, version_group_details: [{ move_learn_method: { name: 'machine' } }] }
+    ],
+    species: {
+      url: 'https://pokeapi.co/api/v2/pokemon-species/1/',
+      generation: { name: 'generation-i' }
+    }
+  },
+  {
+    id: 4,
+    name: 'charmander',
+    sprites: {
+      front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png'
+    },
+    types: [
+      { type: { name: 'fire', url: 'https://pokeapi.co/api/v2/type/10/' } }
+    ],
+    stats: [
+      { stat: { name: 'hp' }, base_stat: 39 },
+      { stat: { name: 'attack' }, base_stat: 52 },
+      { stat: { name: 'defense' }, base_stat: 43 },
+      { stat: { name: 'special-attack' }, base_stat: 60 },
+      { stat: { name: 'special-defense' }, base_stat: 50 },
+      { stat: { name: 'speed' }, base_stat: 65 }
+    ],
+    abilities: [
+      { ability: { name: 'blaze' }, is_hidden: false },
+      { ability: { name: 'solar-power' }, is_hidden: true }
+    ],
+    moves: [
+      { move: { name: 'scratch' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
+      { move: { name: 'growl' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
+      { move: { name: 'ember' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] }
+    ],
+    species: {
+      url: 'https://pokeapi.co/api/v2/pokemon-species/4/',
+      generation: { name: 'generation-i' }
+    }
+  },
+  {
+    id: 7,
+    name: 'squirtle',
+    sprites: {
+      front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png'
+    },
+    types: [
+      { type: { name: 'water', url: 'https://pokeapi.co/api/v2/type/11/' } }
+    ],
+    stats: [
+      { stat: { name: 'hp' }, base_stat: 44 },
+      { stat: { name: 'attack' }, base_stat: 48 },
+      { stat: { name: 'defense' }, base_stat: 65 },
+      { stat: { name: 'special-attack' }, base_stat: 50 },
+      { stat: { name: 'special-defense' }, base_stat: 64 },
+      { stat: { name: 'speed' }, base_stat: 43 }
+    ],
+    abilities: [
+      { ability: { name: 'torrent' }, is_hidden: false },
+      { ability: { name: 'rain-dish' }, is_hidden: true }
+    ],
+    moves: [
+      { move: { name: 'tackle' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
+      { move: { name: 'tail-whip' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
+      { move: { name: 'water-gun' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] }
+    ],
+    species: {
+      url: 'https://pokeapi.co/api/v2/pokemon-species/7/',
+      generation: { name: 'generation-i' }
+    }
+  }
+];
+
 function Pokedex() {
   const [pokemons, setPokemons] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,104 +114,6 @@ function Pokedex() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loader = useRef(null);
-
-  // Mock data for demonstration when API is not available
-  const mockPokemonData = [
-    {
-      id: 1,
-      name: 'bulbasaur',
-      sprites: {
-        front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'
-      },
-      types: [
-        { type: { name: 'grass', url: 'https://pokeapi.co/api/v2/type/12/' } },
-        { type: { name: 'poison', url: 'https://pokeapi.co/api/v2/type/4/' } }
-      ],
-      stats: [
-        { stat: { name: 'hp' }, base_stat: 45 },
-        { stat: { name: 'attack' }, base_stat: 49 },
-        { stat: { name: 'defense' }, base_stat: 49 },
-        { stat: { name: 'special-attack' }, base_stat: 65 },
-        { stat: { name: 'special-defense' }, base_stat: 65 },
-        { stat: { name: 'speed' }, base_stat: 45 }
-      ],
-      abilities: [
-        { ability: { name: 'overgrow' }, is_hidden: false },
-        { ability: { name: 'chlorophyll' }, is_hidden: true }
-      ],
-      moves: [
-        { move: { name: 'razor-wind' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
-        { move: { name: 'swords-dance' }, version_group_details: [{ move_learn_method: { name: 'machine' } }] },
-        { move: { name: 'cut' }, version_group_details: [{ move_learn_method: { name: 'machine' } }] }
-      ],
-      species: {
-        url: 'https://pokeapi.co/api/v2/pokemon-species/1/',
-        generation: { name: 'generation-i' }
-      }
-    },
-    {
-      id: 4,
-      name: 'charmander',
-      sprites: {
-        front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png'
-      },
-      types: [
-        { type: { name: 'fire', url: 'https://pokeapi.co/api/v2/type/10/' } }
-      ],
-      stats: [
-        { stat: { name: 'hp' }, base_stat: 39 },
-        { stat: { name: 'attack' }, base_stat: 52 },
-        { stat: { name: 'defense' }, base_stat: 43 },
-        { stat: { name: 'special-attack' }, base_stat: 60 },
-        { stat: { name: 'special-defense' }, base_stat: 50 },
-        { stat: { name: 'speed' }, base_stat: 65 }
-      ],
-      abilities: [
-        { ability: { name: 'blaze' }, is_hidden: false },
-        { ability: { name: 'solar-power' }, is_hidden: true }
-      ],
-      moves: [
-        { move: { name: 'scratch' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
-        { move: { name: 'growl' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
-        { move: { name: 'ember' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] }
-      ],
-      species: {
-        url: 'https://pokeapi.co/api/v2/pokemon-species/4/',
-        generation: { name: 'generation-i' }
-      }
-    },
-    {
-      id: 7,
-      name: 'squirtle',
-      sprites: {
-        front_default: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png'
-      },
-      types: [
-        { type: { name: 'water', url: 'https://pokeapi.co/api/v2/type/11/' } }
-      ],
-      stats: [
-        { stat: { name: 'hp' }, base_stat: 44 },
-        { stat: { name: 'attack' }, base_stat: 48 },
-        { stat: { name: 'defense' }, base_stat: 65 },
-        { stat: { name: 'special-attack' }, base_stat: 50 },
-        { stat: { name: 'special-defense' }, base_stat: 64 },
-        { stat: { name: 'speed' }, base_stat: 43 }
-      ],
-      abilities: [
-        { ability: { name: 'torrent' }, is_hidden: false },
-        { ability: { name: 'rain-dish' }, is_hidden: true }
-      ],
-      moves: [
-        { move: { name: 'tackle' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
-        { move: { name: 'tail-whip' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] },
-        { move: { name: 'water-gun' }, version_group_details: [{ move_learn_method: { name: 'level-up' } }] }
-      ],
-      species: {
-        url: 'https://pokeapi.co/api/v2/pokemon-species/7/',
-        generation: { name: 'generation-i' }
-      }
-    }
-  ];
 
   const loadPokemons = useCallback(async () => {
     if (!hasMore) return;
