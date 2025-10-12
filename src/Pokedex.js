@@ -110,6 +110,10 @@ function Pokedex({ searchQuery }) {
   const [hasMore, setHasMore] = useState(true);
   const [collapsedGenerations, setCollapsedGenerations] = useState({});
   const loader = useRef(null);
+  const tagContainerRef = useRef(null);
+  const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const typeColors = {
     normal: '#A8A878',
@@ -238,6 +242,37 @@ function Pokedex({ searchQuery }) {
     };
   }, [loadPokemons]);
 
+  // Manage horizontal scroll buttons visibility and state
+  useEffect(() => {
+    const el = tagContainerRef.current;
+    if (!el) return;
+
+    function check() {
+      setShowScrollButtons(el.scrollWidth > el.clientWidth + 2);
+      setCanScrollLeft(el.scrollLeft > 5);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+    }
+
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    el.addEventListener('scroll', check);
+    window.addEventListener('resize', check);
+
+    return () => {
+      ro.disconnect();
+      el.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [types]);
+
+  const scrollByAmount = (dir = 'right') => {
+    const el = tagContainerRef.current;
+    if (!el) return;
+    const amount = Math.floor(el.clientWidth * 0.6) * (dir === 'right' ? 1 : -1);
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
   const filteredPokemons = pokemons
     .filter(pokemon => pokemon.name.includes(searchQuery || ''))
     .filter(pokemon =>
@@ -270,30 +305,68 @@ function Pokedex({ searchQuery }) {
   return (
     <div className="pokedex">
       {/* Type Filters */}
-      <div className="filter-section">
-        <div className="filter-header">
-          <h3 className="filter-title">Filter by Type</h3>
+      <div className="filter-section compact-filters">
+        <div className="filter-header compact">
+          <div className="filter-controls">
+            <div className="type-blocks-wrapper">
+              {/* left intentionally empty to keep layout consistent */}
+            </div>
+          </div>
           {hasActiveFilters && (
             <button className="clear-filters-btn" onClick={clearAllFilters}>
-              Clear Filters
+              Clear
             </button>
           )}
         </div>
-        <div className="tag-container">
-          {types.map(t => (
+
+        {/* Compact type blocks: small colored swatch + label */}
+        <div className="tag-scroll-wrapper">
+          {showScrollButtons && (
             <button
-              key={t.name}
-              className={`tag-filter ${selectedTypes.includes(t.name) ? 'active' : ''}`}
-              onClick={() => toggleTypeFilter(t.name)}
-              style={{
-                backgroundColor: selectedTypes.includes(t.name) ? typeColors[t.name] : 'transparent',
-                borderColor: typeColors[t.name],
-                color: selectedTypes.includes(t.name) ? '#fff' : typeColors[t.name]
-              }}
+              className={`scroll-btn left ${canScrollLeft ? '' : 'disabled'}`}
+              onClick={() => scrollByAmount('left')}
+              aria-hidden={!canScrollLeft}
             >
-              {t.name}
+              ‹
             </button>
-          ))}
+          )}
+
+          <div ref={tagContainerRef} className="tag-container type-blocks">
+            {types.map(t => {
+            const active = selectedTypes.includes(t.name);
+            const color = typeColors[t.name] || '#888';
+            return (
+              <button
+                key={t.name}
+                className={`type-block ${active ? 'active' : ''}`}
+                onClick={() => toggleTypeFilter(t.name)}
+                aria-pressed={active}
+                style={{ borderColor: color }}
+                title={`Filter by ${t.name}`}
+              >
+                <span
+                  className="type-swatch"
+                  style={{
+                    backgroundColor: active ? color : 'transparent',
+                    borderColor: color,
+                    boxShadow: active ? `0 0 0 6px ${color}22` : 'none'
+                  }}
+                />
+                <span className="type-label">{t.name}</span>
+              </button>
+            );
+          })}
+          </div>
+
+          {showScrollButtons && (
+            <button
+              className={`scroll-btn right ${canScrollRight ? '' : 'disabled'}`}
+              onClick={() => scrollByAmount('right')}
+              aria-hidden={!canScrollRight}
+            >
+              ›
+            </button>
+          )}
         </div>
       </div>
 

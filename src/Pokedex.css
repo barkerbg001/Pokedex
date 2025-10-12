@@ -65,10 +65,6 @@
 .filter-section {
     margin: 1rem 0;
     width: 100%;
-    padding: 1rem 1.25rem;
-    background: var(--filter-section-bg);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
 }
 
 .filter-section:first-of-type {
@@ -79,11 +75,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .filter-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -93,27 +89,27 @@
     background: none;
     border: none;
     color: var(--accent-color);
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    transition: all 0.12s ease;
 }
 
 .clear-filters-btn:hover {
-    background: var(--tag-hover-bg);
+    opacity: 0.9;
 }
 
 /* Tag Container - Uber Eats Style */
 .tag-container {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.6rem;
     overflow-x: auto;
-    padding: 0.5rem 0;
+    padding: 0.4rem 0;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    /* prevent the tag container from causing horizontal overflow on the body */
     max-width: 100%;
+    align-items: center;
 }
 
 .tag-container::-webkit-scrollbar {
@@ -134,30 +130,86 @@
 }
 
 /* Tag Filter Buttons */
-.tag-filter {
+.type-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
     flex-shrink: 0;
-    padding: 0.45rem 0.9rem; /* slightly smaller */
-    border-radius: 999px;
-    border: 2px solid;
-    background: var(--tag-bg);
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: capitalize;
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: transform 0.12s ease, background 0.12s ease;
     white-space: nowrap;
-    line-height: 1;
+    height: 36px;
 }
 
-.tag-filter:hover {
-    transform: scale(1.05);
-    background: var(--tag-hover-bg);
+.type-block:hover {
+    transform: translateY(-2px);
 }
 
-.tag-filter.active {
-    color: white !important;
-    box-shadow: var(--shadow-md);
+.type-block .type-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border-color);
+    display: inline-block;
+    box-sizing: border-box;
 }
+
+.type-block .type-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    color: var(--text-primary);
+}
+
+.type-block.active {
+    background: linear-gradient(90deg, var(--accent-gradient));
+    color: #fff;
+    border-color: transparent;
+}
+
+.type-block.active .type-label {
+    color: #fff;
+}
+
+/* Scroll wrapper and buttons to replace native scrollbar */
+.tag-scroll-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.tag-scroll-wrapper .scroll-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin: 0 8px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.12s ease, opacity 0.12s ease;
+    flex-shrink: 0;
+}
+
+.tag-scroll-wrapper .scroll-btn.disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.tag-scroll-wrapper .scroll-btn:hover:not(.disabled) {
+    transform: translateY(-2px);
+}
+
+/* Hide native horizontal scrollbar but keep scrolling */
+.tag-container::-webkit-scrollbar { height: 0; }
+.tag-container { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Generation Tags */
 .generation-tag {
