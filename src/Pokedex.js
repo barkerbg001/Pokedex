@@ -111,6 +111,7 @@ function Pokedex({ searchQuery }) {
   const [collapsedGenerations, setCollapsedGenerations] = useState({});
   const loader = useRef(null);
   const tagContainerRef = useRef(null);
+  const isFetchingRef = useRef(false);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -176,8 +177,9 @@ function Pokedex({ searchQuery }) {
   };
 
   const loadPokemons = useCallback(async () => {
-    if (!hasMore) return;
-    
+    if (isFetchingRef.current || !hasMore) return;
+    isFetchingRef.current = true;
+
     try {
       const limit = 30;
       const response = await axios.get(
@@ -206,6 +208,8 @@ function Pokedex({ searchQuery }) {
         setPokemons(mockPokemonData);
         setHasMore(false);
       }
+    } finally {
+      isFetchingRef.current = false;
     }
   }, [offset, hasMore]);
 
