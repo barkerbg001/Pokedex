@@ -158,6 +158,50 @@
     box-sizing: border-box;
 }
 
+/* Vertical block layout */
+.type-block.vertical {
+    width: 72px;
+    height: auto;
+    padding: 8px 6px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+}
+
+.type-swatch-outer {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1.5px solid var(--border-color);
+    box-sizing: border-box;
+}
+
+/* Make white SVGs pop slightly on tinted backgrounds */
+.type-swatch-outer img.type-icon {
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+}
+
+.type-block.vertical .type-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    display: block;
+}
+
+.type-swatch img.type-icon,
+.type-swatch-outer img.type-icon {
+    width: 24px;
+    height: 24px;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
 .type-block .type-label {
     font-size: 0.85rem;
     font-weight: 600;

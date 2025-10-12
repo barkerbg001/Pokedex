@@ -335,23 +335,32 @@ function Pokedex({ searchQuery }) {
             {types.map(t => {
             const active = selectedTypes.includes(t.name);
             const color = typeColors[t.name] || '#888';
+            // create a faint translucent background for inactive swatches so white SVGs remain visible
+            const translucent = `${color}22`; // append alpha for light tint
             return (
               <button
                 key={t.name}
-                className={`type-block ${active ? 'active' : ''}`}
+                className={`type-block vertical ${active ? 'active' : ''}`}
                 onClick={() => toggleTypeFilter(t.name)}
                 aria-pressed={active}
                 style={{ borderColor: color }}
                 title={`Filter by ${t.name}`}
               >
-                <span
-                  className="type-swatch"
+                <div
+                  className="type-swatch-outer"
                   style={{
-                    backgroundColor: active ? color : 'transparent',
+                    backgroundColor: active ? color : translucent,
                     borderColor: color,
                     boxShadow: active ? `0 0 0 6px ${color}22` : 'none'
                   }}
-                />
+                >
+                  <img
+                    src={`/types/${t.name}.svg`}
+                    alt={`${t.name} icon`}
+                    className="type-icon"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
                 <span className="type-label">{t.name}</span>
               </button>
             );
