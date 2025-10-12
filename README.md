@@ -19,6 +19,10 @@ A modern, feature-rich Pokédex application built with React that provides compr
    - Complete evolution chain
    - Weaknesses, resistances, and immunities
 
+   ### Favorites
+
+   - Favorite Pokémon list with local storage: mark any Pokémon as a favorite using the star button on a card. Favorites are shown in a compact horizontal list above the results and persist across browser reloads using localStorage.
+
 ### Technical Features
 - Lazy loading images for optimal performance
 - Mock data fallback for offline demonstration
@@ -165,9 +169,7 @@ Alternatively, see the GitHub documentation on [creating a pull request](https:/
 ## Future Enhancements
 
 Potential features to add:
-- [ ] Favorite Pokémon list with local storage
-- [ ] Comparison tool for multiple Pokémon
-- [ ] Advanced sorting options (by stat, alphabetically, etc.)
+- [x] Favorite Pokémon list with local storage
 - [ ] Pokémon team builder
 - [ ] PWA improvements (offline caching, installable)
 - [ ] Audio for Pokémon cries

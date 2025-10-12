@@ -114,6 +114,14 @@ function Pokedex({ searchQuery }) {
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const raw = localStorage.getItem('pokedex:favorites');
+      return raw ? JSON.parse(raw) : [];
+    } catch (_) {
+      return [];
+    }
+  });
 
   const typeColors = {
     normal: '#A8A878',
@@ -273,6 +281,14 @@ function Pokedex({ searchQuery }) {
     el.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
+  const toggleFavorite = (pokemonId) => {
+    setFavorites(prev => {
+      const next = prev.includes(pokemonId) ? prev.filter(id => id !== pokemonId) : [...prev, pokemonId];
+      try { localStorage.setItem('pokedex:favorites', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
   const filteredPokemons = pokemons
     .filter(pokemon => pokemon.name.includes(searchQuery || ''))
     .filter(pokemon =>
@@ -384,6 +400,25 @@ function Pokedex({ searchQuery }) {
         <p>Showing {filteredPokemons.length} Pokémon across {sortedGenerations.length} generations</p>
       </div>
 
+      {/* Favorites */}
+      {favorites.length > 0 && (
+        <div className="favorites-section">
+          <h3>Favorites</h3>
+          <div className="favorites-list">
+            {favorites.map(fid => {
+              const p = pokemons.find(x => x.id === fid) || mockPokemonData.find(x => x.id === fid);
+              if (!p) return null;
+              return (
+                <div key={`fav-${fid}`} className="favorite-chip" onClick={() => setSelectedPokemon(p)}>
+                  <img src={p.sprites.front_default} alt={p.name} />
+                  <span>{p.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Grouped by Generation */}
       {sortedGenerations.map(genName => (
         <div key={genName} className="generation-group">
@@ -403,14 +438,24 @@ function Pokedex({ searchQuery }) {
                 <div
                   key={pokemon.id}
                   className="pokemon-card"
-                  onClick={() => setSelectedPokemon(pokemon)}
                 >
-                  <img
-                    src={pokemon.sprites.front_default}
-                    alt={pokemon.name}
-                    loading="lazy"
-                  />
-                  <p>{pokemon.name}</p>
+                  <div className="card-top">
+                    <img
+                      src={pokemon.sprites.front_default}
+                      alt={pokemon.name}
+                      loading="lazy"
+                      onClick={() => setSelectedPokemon(pokemon)}
+                    />
+                    <button
+                      className={`fav-btn ${favorites.includes(pokemon.id) ? 'active' : ''}`}
+                      onClick={() => toggleFavorite(pokemon.id)}
+                      aria-pressed={favorites.includes(pokemon.id)}
+                      title={favorites.includes(pokemon.id) ? 'Unfavorite' : 'Add to favorites'}
+                    >
+                      ★
+                    </button>
+                  </div>
+                  <p onClick={() => setSelectedPokemon(pokemon)}>{pokemon.name}</p>
                 </div>
               ))}
             </div>
