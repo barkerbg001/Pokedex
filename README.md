@@ -84,7 +84,8 @@ Open `http://localhost:3000` (or the port printed in the terminal) in your brows
 
 **Search and Filter:**
 - Use the search bar in the navbar to find Pokémon by name in real time.
-- Type filter blocks are compact and horizontally scrollable — use the left/right buttons to scroll the list and hide the native scrollbar.
+- Type filter blocks are compact vertical blocks (icon on top, label underneath) and horizontally scrollable — use the left/right buttons to scroll and hide the native scrollbar.
+- Type icons live in `public/types/` (named like `fire.svg`, `water.svg`, etc.). If an icon is missing the colored swatch acts as a fallback so filtering still works.
 - Click a generation header to expand or collapse that generation group.
 - Enter an ability name to find Pokémon with that ability.
 - Set a minimum attack value to filter stronger Pokémon.
