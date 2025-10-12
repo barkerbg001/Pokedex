@@ -101,19 +101,67 @@ const mockPokemonData = [
   }
 ];
 
-function Pokedex() {
+function Pokedex({ searchQuery }) {
   const [pokemons, setPokemons] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedGeneration, setSelectedGeneration] = useState('');
-  const [abilityQuery, setAbilityQuery] = useState('');
-  const [minAttack, setMinAttack] = useState(0);
+  const [selectedTypes, setSelectedTypes] = useState([]);
   const [types, setTypes] = useState([]);
-  const [generations, setGenerations] = useState([]);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [collapsedGenerations, setCollapsedGenerations] = useState({});
   const loader = useRef(null);
+
+  const typeColors = {
+    normal: '#A8A878',
+    fire: '#F08030',
+    water: '#6890F0',
+    electric: '#F8D030',
+    grass: '#78C850',
+    ice: '#98D8D8',
+    fighting: '#C03028',
+    poison: '#A040A0',
+    ground: '#E0C068',
+    flying: '#A890F0',
+    psychic: '#F85888',
+    bug: '#A8B820',
+    rock: '#B8A038',
+    ghost: '#705898',
+    dragon: '#7038F8',
+    dark: '#705848',
+    steel: '#B8B8D0',
+    fairy: '#EE99AC'
+  };
+
+  const generationNames = {
+    'generation-i': 'Generation I (Kanto)',
+    'generation-ii': 'Generation II (Johto)',
+    'generation-iii': 'Generation III (Hoenn)',
+    'generation-iv': 'Generation IV (Sinnoh)',
+    'generation-v': 'Generation V (Unova)',
+    'generation-vi': 'Generation VI (Kalos)',
+    'generation-vii': 'Generation VII (Alola)',
+    'generation-viii': 'Generation VIII (Galar)',
+    'generation-ix': 'Generation IX (Paldea)'
+  };
+
+  const toggleTypeFilter = (typeName) => {
+    setSelectedTypes(prev => 
+      prev.includes(typeName) 
+        ? prev.filter(t => t !== typeName)
+        : [...prev, typeName]
+    );
+  };
+
+  const toggleGeneration = (genName) => {
+    setCollapsedGenerations(prev => ({
+      ...prev,
+      [genName]: !prev[genName]
+    }));
+  };
+
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+  };
 
   const loadPokemons = useCallback(async () => {
     if (!hasMore) return;
@@ -158,8 +206,6 @@ function Pokedex() {
       try {
         const typeRes = await axios.get('https://pokeapi.co/api/v2/type?limit=100');
         setTypes(typeRes.data.results);
-        const genRes = await axios.get('https://pokeapi.co/api/v2/generation?limit=100');
-        setGenerations(genRes.data.results);
       } catch (e) {
         console.log('Using mock filter data');
         // Mock filter data when API is not available
@@ -168,10 +214,6 @@ function Pokedex() {
           { name: 'water' },
           { name: 'grass' },
           { name: 'poison' }
-        ]);
-        setGenerations([
-          { name: 'generation-i' },
-          { name: 'generation-ii' }
         ]);
       }
     }
@@ -196,91 +238,104 @@ function Pokedex() {
     };
   }, [loadPokemons]);
 
-  function handleSearchChange(event) {
-    setSearchQuery(event.target.value.toLowerCase());
-  }
-
   const filteredPokemons = pokemons
-    .filter(pokemon => pokemon.name.includes(searchQuery))
+    .filter(pokemon => pokemon.name.includes(searchQuery || ''))
     .filter(pokemon =>
-      selectedType ? pokemon.types.some(t => t.type.name === selectedType) : true
-    )
-    .filter(pokemon =>
-      selectedGeneration
-        ? pokemon.species.generation.name === selectedGeneration
-        : true
-    )
-    .filter(pokemon =>
-      abilityQuery
-        ? pokemon.abilities.some(a =>
-            a.ability.name.toLowerCase().includes(abilityQuery)
-          )
-        : true
-    )
-    .filter(pokemon => {
-      const attack = pokemon.stats.find(s => s.stat.name === 'attack');
-      return attack ? attack.base_stat >= minAttack : true;
-    });
+      selectedTypes.length === 0 
+        ? true 
+        : pokemon.types.some(t => selectedTypes.includes(t.type.name))
+    );
+
+  // Group Pokemon by generation
+  const groupedByGeneration = filteredPokemons.reduce((acc, pokemon) => {
+    const genName = pokemon.species?.generation?.name || 'unknown';
+    if (!acc[genName]) {
+      acc[genName] = [];
+    }
+    acc[genName].push(pokemon);
+    return acc;
+  }, {});
+
+  // Sort generations in order
+  const sortedGenerations = Object.keys(groupedByGeneration).sort((a, b) => {
+    const order = ['generation-i', 'generation-ii', 'generation-iii', 'generation-iv', 
+                   'generation-v', 'generation-vi', 'generation-vii', 'generation-viii', 'generation-ix'];
+    return order.indexOf(a) - order.indexOf(b);
+  });
+
+  const hasActiveFilters = selectedTypes.length > 0;
 
 
 
   return (
     <div className="pokedex">
-      <input
-        type="text"
-        placeholder="Search Pokémon"
-        className="search-input"
-        onChange={handleSearchChange}
-      />
-      <div className="filters">
-        <select onChange={e => setSelectedType(e.target.value)} value={selectedType}>
-          <option value="">All Types</option>
+      {/* Type Filters */}
+      <div className="filter-section">
+        <div className="filter-header">
+          <h3 className="filter-title">Filter by Type</h3>
+          {hasActiveFilters && (
+            <button className="clear-filters-btn" onClick={clearAllFilters}>
+              Clear Filters
+            </button>
+          )}
+        </div>
+        <div className="tag-container">
           {types.map(t => (
-            <option key={t.name} value={t.name}>
+            <button
+              key={t.name}
+              className={`tag-filter ${selectedTypes.includes(t.name) ? 'active' : ''}`}
+              onClick={() => toggleTypeFilter(t.name)}
+              style={{
+                backgroundColor: selectedTypes.includes(t.name) ? typeColors[t.name] : 'transparent',
+                borderColor: typeColors[t.name],
+                color: selectedTypes.includes(t.name) ? '#fff' : typeColors[t.name]
+              }}
+            >
               {t.name}
-            </option>
+            </button>
           ))}
-        </select>
-        <select
-          onChange={e => setSelectedGeneration(e.target.value)}
-          value={selectedGeneration}
-        >
-          <option value="">All Generations</option>
-          {generations.map(g => (
-            <option key={g.name} value={g.name}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="Ability"
-          value={abilityQuery}
-          onChange={e => setAbilityQuery(e.target.value.toLowerCase())}
-        />
-        <input
-          type="number"
-          placeholder="Min Attack"
-          value={minAttack}
-          onChange={e => setMinAttack(Number(e.target.value))}
-        />
+        </div>
       </div>
-      <div className="pokemon-grid">
-        {filteredPokemons.map(pokemon => (
-          <div
-            key={pokemon.id}
-            className="pokemon-card"
-            onClick={() => setSelectedPokemon(pokemon)}
-          >
-            <img
-              src={pokemon.sprites.front_default}
-              alt={pokemon.name}
-              loading="lazy"
-            />
-            <p>{pokemon.name}</p>
+
+      {/* Results count */}
+      <div className="results-info">
+        <p>Showing {filteredPokemons.length} Pokémon across {sortedGenerations.length} generations</p>
+      </div>
+
+      {/* Grouped by Generation */}
+      {sortedGenerations.map(genName => (
+        <div key={genName} className="generation-group">
+          <div className="generation-header" onClick={() => toggleGeneration(genName)}>
+            <h2 className="generation-title">
+              {generationNames[genName] || genName}
+              <span className="pokemon-count">({groupedByGeneration[genName].length} Pokémon)</span>
+            </h2>
+            <button className="collapse-toggle" aria-label="Toggle generation">
+              {collapsedGenerations[genName] ? '▼' : '▲'}
+            </button>
           </div>
-        ))}
-      </div>
+          
+          {!collapsedGenerations[genName] && (
+            <div className="pokemon-grid">
+              {groupedByGeneration[genName].map(pokemon => (
+                <div
+                  key={pokemon.id}
+                  className="pokemon-card"
+                  onClick={() => setSelectedPokemon(pokemon)}
+                >
+                  <img
+                    src={pokemon.sprites.front_default}
+                    alt={pokemon.name}
+                    loading="lazy"
+                  />
+                  <p>{pokemon.name}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
       {hasMore && <div ref={loader} className="loading">Loading...</div>}
       {selectedPokemon && (
         <PokemonDetail
