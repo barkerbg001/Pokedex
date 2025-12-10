@@ -1,6 +1,7 @@
 import './App.css';
 import { useState, useEffect } from 'react';
 import Pokedex from './Pokedex'; // Import the Pokedex component
+import InstallPrompt from './InstallPrompt';
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,6 +23,7 @@ function App() {
 
   return (
     <div className="App">
+      <InstallPrompt />
       <header className="App-header">
         <div className="navbar-content">
           <h1>Pokédex</h1>

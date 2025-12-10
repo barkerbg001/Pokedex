@@ -42,11 +42,13 @@ A modern, feature-rich Pokédex application built with React that provides compr
 ## Technologies Used
 
 - **React 19.2.0** - UI library
+- **Vite 6.0.5** - Build tool and dev server
 - **Axios 1.6.8** - HTTP client for API requests
 - **PokéAPI** - RESTful Pokémon data API
 - **Node.js & npm** - JavaScript runtime and package manager
 - **CSS3** - Styling and animations
-- **React Testing Library** - Component testing
+- **Vitest** - Unit testing framework
+- **React Testing Library** - Component testing utilities
 
 ## Prerequisites
 
@@ -73,7 +75,7 @@ To install Pokédex locally:
 Start the development server:
 
 ```bash
-npm start
+npm run dev
 ```
 
 Open `http://localhost:3000` in your browser to view the app.
@@ -127,14 +129,17 @@ Pokedex/
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev`
 Runs the app in development mode at [http://localhost:3000](http://localhost:3000)
 
 ### `npm test`
-Launches the test runner in interactive watch mode
+Launches the test runner (Vitest) in interactive watch mode
 
 ### `npm run build`
 Builds the app for production to the `build` folder
+
+### `npm run preview`
+Preview the production build locally
 
 ## API Integration
 
@@ -165,12 +170,20 @@ Please ensure your code:
 
 Alternatively, see the GitHub documentation on [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
+## PWA Features
+
+This app is a Progressive Web App (PWA) with the following features:
+- **Installable**: Custom install prompt that appears when the app can be installed
+- **Offline Support**: Service worker caches resources for offline browsing
+- **App-like Experience**: Standalone display mode when installed
+- **Fast Loading**: Cached resources load instantly on repeat visits
+
 ## Future Enhancements
 
 Potential features to add:
 - [x] Favorite Pokémon list with local storage
+- [x] PWA improvements (offline caching, installable)
 - [ ] Pokémon team builder
-- [ ] PWA improvements (offline caching, installable)
 - [ ] Audio for Pokémon cries
 - [ ] Shiny sprite toggle
 - [ ] Filter by egg group or habitat
@@ -179,7 +192,7 @@ Potential features to add:
 ## Acknowledgments
 
 - [PokéAPI](https://pokeapi.co/) for providing the comprehensive Pokémon data
-- [Create React App](https://create-react-app.dev/) for the project setup
+- [Vite](https://vitejs.dev/) for the build tool and dev server
 - Nintendo/Game Freak/Pokémon Company for creating Pokémon
 
 ## License
