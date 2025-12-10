@@ -1,4 +1,7 @@
 {
+  "name": "pokedex",
+  "version": "1.0.0",
+  "description": "A modern Pokédex web application to browse and search Pokémon",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^6.9.1",

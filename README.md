@@ -1,4 +1,4 @@
-# Pokédex React App
+# Pokédex
 
 A modern, feature-rich Pokédex application built with React that provides comprehensive Pokémon information using the [PokéAPI](https://pokeapi.co). Browse, search, and explore detailed information about your favorite Pokémon with an intuitive interface.
 
@@ -54,9 +54,9 @@ Before you begin, ensure you have met the following requirements:
 - You have Node.js and npm installed (visit [nodejs.org](https://nodejs.org) for installation instructions).
 - Basic familiarity with React and npm scripts is helpful.
 
-## Installing Pokedex
+## Installation
 
-To install Pokedex locally:
+To install Pokédex locally:
 
 1. Clone the repository:
    ```bash
@@ -68,21 +68,15 @@ To install Pokedex locally:
    npm install
    ```
 
-## Using Pokedex
+## Usage
 
-Start the development server and open the app in your browser.
+Start the development server:
 
-Common commands (pick the one your project uses):
-
-```powershell
-# Start the dev server (some projects use `start`)
+```bash
 npm start
-
-# Or, if you use a lighter dev task (Vite/other), you might use:
-npm run dev
 ```
 
-Open `http://localhost:3000` (or the port printed in the terminal) in your browser.
+Open `http://localhost:3000` in your browser to view the app.
 
 ### Features Guide
 
@@ -109,7 +103,12 @@ Pokedex/
 ├── public/
 │   ├── index.html          # HTML template
 │   ├── manifest.json       # PWA manifest
-│   └── robots.txt          # SEO configuration
+│   ├── site.webmanifest    # Web manifest
+│   ├── favicon.ico         # Favicon
+│   ├── logo192.png         # App icon (192x192)
+│   ├── logo512.png         # App icon (512x512)
+│   ├── apple-touch-icon.png # iOS app icon
+│   └── types/              # Pokémon type icons
 ├── src/
 │   ├── App.js              # Main app component (navbar, theme toggle)
 │   ├── App.css             # App styles & theme variables
@@ -148,9 +147,9 @@ This app uses the [PokéAPI](https://pokeapi.co/docs/v2) to fetch:
 
 The app includes mock data for offline demonstration purposes.
 
-## Contributing to Pokedex
+## Contributing
 
-Contributions are welcome! To contribute to Pokedex, follow these steps:
+Contributions are welcome! To contribute to Pokédex, follow these steps:
 
 1. Fork this repository
 2. Create a branch: `git checkout -b feature/<feature_name>`
