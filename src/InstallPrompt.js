@@ -87,7 +87,7 @@ function InstallPrompt() {
         </div>
         <div className="install-prompt-text">
           <h3>Install Pokédex</h3>
-          <p>Add to your home screen for quick access and offline browsing!</p>
+          <p>Quick access and offline browsing</p>
         </div>
         <div className="install-prompt-actions">
           <button
@@ -102,7 +102,7 @@ function InstallPrompt() {
             onClick={handleDismiss}
             aria-label="Dismiss install prompt"
           >
-            Not now
+            ✕
           </button>
         </div>
       </div>
