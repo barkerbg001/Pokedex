@@ -204,30 +204,52 @@ This app integrates with the [PokéAPI v2](https://pokeapi.co/docs/v2) to fetch:
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
+We welcome contributions to improve the Pokédex! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
 
-### Getting Started
-1. Fork this repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes with clear, descriptive commits
-4. Push to your branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+### How to Contribute
 
-### Guidelines
-- Follow existing code style and conventions
-- Write meaningful commit messages
-- Add comments for complex logic
-- Update tests for new features
-- Update documentation as needed
-- Test across different browsers and devices
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Pokedex.git
+   cd Pokedex
+   ```
+3. **Create a new branch** for your changes:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+4. **Make your changes** and test them locally:
+   ```bash
+   npm install
+   npm run dev
+   ```
+5. **Commit your changes** with clear messages:
+   ```bash
+   git commit -m "Add: description of your change"
+   ```
+6. **Push to your fork**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+7. **Open a Pull Request** on GitHub with a clear description of your changes
 
-### Areas for Contribution
-- Bug fixes and performance improvements
-- New filter options or search enhancements
-- Accessibility improvements
-- Additional PWA features
-- UI/UX refinements
-- Test coverage expansion
+### Code Style
+
+- Use consistent formatting (the project uses standard JavaScript/React conventions)
+- Add comments for complex logic, especially API interactions
+- Keep components focused and reusable
+- Test your changes in both light and dark themes
+- Ensure responsive design works on mobile and desktop
+
+### What to Contribute
+
+- **Bug fixes**: Report issues or submit fixes
+- **New features**: See the "Future Enhancements" section for ideas
+- **Filter improvements**: Add new filter options or enhance existing ones
+- **Accessibility**: Improve keyboard navigation, screen reader support, or ARIA labels
+- **Performance**: Optimize API calls, reduce bundle size, or improve loading times
+- **Testing**: Add unit tests or improve test coverage
+- **Documentation**: Fix typos, clarify instructions, or add examples
 
 ## Future Enhancements
 
