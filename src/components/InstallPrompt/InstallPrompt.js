@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FiX } from 'react-icons/fi';
 import './InstallPrompt.css';
 
 function InstallPrompt() {
@@ -102,7 +103,7 @@ function InstallPrompt() {
             onClick={handleDismiss}
             aria-label="Dismiss install prompt"
           >
-            ✕
+            <FiX />
           </button>
         </div>
       </div>
@@ -111,4 +112,3 @@ function InstallPrompt() {
 }
 
 export default InstallPrompt;
-

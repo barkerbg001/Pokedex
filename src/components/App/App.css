@@ -1,0 +1,87 @@
+/* Theme Variables */
+:root[data-theme='light'] {
+  /* Pokémon GO-inspired sky-blue palette */
+  --accent-color: #1fb6d9; /* bright teal-cyan */
+  --accent-color-2: #5cd6ea; /* lighter cyan */
+  --accent-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-2) 100%);
+  --highlight-color: #7fe3c3; /* mint */
+  --highlight-color-2: #34c4a0; /* teal-green */
+  --highlight-gradient: linear-gradient(
+    135deg,
+    var(--highlight-color) 0%,
+    var(--highlight-color-2) 100%
+  );
+  --page-gradient: linear-gradient(180deg, #d4f3fb 0%, #a9e2f2 100%);
+  --bg-primary: #eaf7fc; /* pale icy blue */
+  --bg-secondary: #f4fbfd;
+  --bg-card: #e3f4fa;
+  --bg-card-hover: #d3ecf6;
+  --text-primary: #0d3b53; /* deep navy-teal */
+  --text-secondary: #3d6b80;
+  --text-tertiary: #6b93a3;
+  --border-color: #c3e6f0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: rgba(13, 59, 83, 0.08);
+  --input-focus-bg: #ffffff;
+  --input-focus-border: rgba(31, 182, 217, 0.35);
+  --tag-bg: transparent;
+  --tag-hover-bg: rgba(31, 182, 217, 0.1);
+  --filter-section-bg: #f4fbfd;
+  --results-text: #3d6b80;
+}
+
+:root[data-theme='dark'] {
+  --accent-color: #4c6ef5;
+  --accent-color-2: #6b8cff;
+  --accent-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-color-2) 100%);
+  --highlight-color: #f093fb;
+  --highlight-color-2: #f5576c;
+  --highlight-gradient: linear-gradient(
+    135deg,
+    var(--highlight-color) 0%,
+    var(--highlight-color-2) 100%
+  );
+  --page-gradient: var(--bg-primary);
+  --bg-primary: #0f1419;
+  --bg-secondary: #1a1f2e;
+  --bg-card: #252d3d;
+  --bg-card-hover: #2d3548;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e0;
+  --text-tertiary: #a0aec0;
+  --border-color: #2d3748;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --input-bg: rgba(37, 45, 61, 0.95);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-bg: #2d3548;
+  --input-focus-border: rgba(102, 126, 234, 0.5);
+  --tag-bg: transparent;
+  --tag-hover-bg: rgba(102, 126, 234, 0.2);
+  --filter-section-bg: #1a1f2e;
+  --results-text: #a0aec0;
+}
+
+.App {
+  text-align: center;
+  background: var(--page-gradient);
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
