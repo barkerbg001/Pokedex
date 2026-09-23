@@ -46,6 +46,10 @@
   color: var(--text-primary);
 }
 
+.pokedex-error-page h1.pokedex-error-title-text {
+  font-size: 2rem;
+}
+
 .pokedex-error-page p,
 .pokedex-error-inline p {
   color: var(--text-secondary);
@@ -65,9 +69,22 @@
   transition: transform 0.15s ease;
 }
 
-.pokedex-error-page button:hover,
-.pokedex-error-inline button:hover {
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .pokedex-error-page button:hover,
+  .pokedex-error-inline button:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.offline-notice {
+  margin: 0 1.25rem 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .pokedex-error-inline {
@@ -116,12 +133,20 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid var(--border-color);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
 
-.pokemon-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
-  background-color: var(--bg-card-hover);
+@media (hover: hover) {
+  .pokemon-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    background-color: var(--bg-card-hover);
+  }
+}
+
+.pokemon-card:active {
+  transform: scale(0.97);
 }
 
 .pokemon-card img {
@@ -138,12 +163,35 @@
   letter-spacing: 0.02em;
 }
 
-.pokemon-card p {
+.pokemon-card-open {
+  order: 1;
   margin: 0.15rem 0 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
   font-weight: 600;
   text-transform: capitalize;
   color: var(--text-secondary);
   font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Stretch the open button's hit area over the whole card */
+.pokemon-card-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pokemon-card-open:focus-visible {
+  outline: none;
+}
+
+.pokemon-card:has(.pokemon-card-open:focus-visible) {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 .card-top {
@@ -156,6 +204,7 @@
 
 .fav-btn {
   position: absolute;
+  z-index: 1;
   top: 6px;
   right: 8px;
   background: rgba(0, 0, 0, 0.06);
@@ -179,33 +228,47 @@
   border-color: transparent;
 }
 
-.favorites-section {
-  padding: 0 1.25rem;
-  margin: 0.5rem 0 1rem 0;
-}
-
-.favorites-list {
+.empty-state {
   display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
-
-.favorite-chip {
-  display: inline-flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  background: var(--bg-card);
-  padding: 0.35rem 0.6rem;
+  max-width: 320px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  color: var(--accent-color);
+}
+
+.empty-state h3 {
+  margin: 0.25rem 0 0;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.empty-state button {
+  margin-top: 0.75rem;
+  padding: 0.7rem 1.4rem;
+  border: none;
   border-radius: 999px;
-  border: 1px solid var(--border-color);
+  background: var(--accent-gradient);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.favorite-chip img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
+.inline-icon {
+  vertical-align: -0.125em;
 }
 
 /* Page header (mirrors .settings-title) */
@@ -238,8 +301,10 @@
   z-index: 60;
 }
 
-.fab-button:hover {
-  transform: scale(1.08);
+@media (hover: hover) {
+  .fab-button:hover {
+    transform: scale(1.08);
+  }
 }
 
 .fab-badge {
@@ -263,6 +328,7 @@
 
 /* Search */
 .search-section {
+  position: relative;
   width: 100%;
   margin: 0.5rem 0 1rem;
   padding: 0 1.25rem;
@@ -271,8 +337,11 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 20px;
+  /* Right padding leaves room for the clear button */
+  padding: 12px 48px 12px 20px;
   border-radius: 25px;
+  -webkit-appearance: none;
+  appearance: none;
   border: 2px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text-primary);
@@ -291,6 +360,31 @@
 
 .search-input::placeholder {
   color: var(--text-tertiary);
+}
+
+/* Our own clear button replaces the browser's (only some browsers show one) */
+.search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-clear {
+  position: absolute;
+  top: 50%;
+  right: calc(1.25rem + 2px);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-tertiary);
+  font-size: 1.1rem;
+  cursor: pointer;
 }
 
 /* Results Info */
@@ -328,39 +422,135 @@
   display: none;
 }
 
+/* Hidden until focused with the keyboard */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.pokedex-content:focus {
+  outline: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
-  .search-input {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-
-  .fab-button {
-    bottom: 1.25rem;
-    right: 1.25rem;
-    width: 50px;
-    height: 50px;
-  }
-
   .pokedex {
     flex-direction: column;
+    align-items: stretch;
+    /* Clear the fixed bottom navigation bar */
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem);
   }
 
   .pokedex-content {
     margin-left: 0;
+    padding: env(safe-area-inset-top, 0px) 0 0;
+  }
+
+  .page-title {
+    padding: 1.25rem 1rem 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+  }
+
+  .search-section,
+  .results-info {
+    padding: 0 1rem;
+  }
+
+  .offline-notice {
+    margin: 0 1rem 0.75rem;
+  }
+
+  .search-clear {
+    right: calc(1rem + 2px);
+  }
+
+  .results-info {
+    margin: 0.75rem 0;
+  }
+
+  .results-info p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  /* 16px or larger stops iOS Safari from zooming in when the input is focused */
+  .search-input {
+    padding: 10px 48px 10px 16px;
+    font-size: 16px;
+  }
+
+  /* The Filter tab in the bottom navigation replaces the floating button */
+  .fab-button {
+    display: none;
   }
 
   .pokemon-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 0.75rem;
-    padding: 0.75rem;
+    padding: 0.25rem 1rem 1rem;
   }
 }
 
 @media (max-width: 480px) {
   .pokemon-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
+  }
+
+  .pokemon-card {
+    padding: 0.6rem 0.4rem;
+    border-radius: 14px;
+  }
+
+  .pokemon-card img {
+    width: 72px;
+    height: 72px;
+  }
+
+  .pokemon-card-id {
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  .pokemon-card-open {
+    font-size: 0.75rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A borderless 44px target tucked into the card's corner, so it meets the
+     minimum tap size without a box covering the sprite. Filled vs outline
+     star shows the state. */
+  .fav-btn,
+  .fav-btn.active {
+    top: -0.6rem;
+    right: -0.4rem;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .fav-btn.active {
+    color: var(--accent-color);
   }
 }
 

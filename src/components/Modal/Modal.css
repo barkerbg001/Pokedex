@@ -1,0 +1,205 @@
+/* Shared modal shell used by every modal in the app (Pokemon detail, type
+   filter, generation picker) so they share one consistent look: a right-side
+   slide-out panel on desktop and a bottom sheet on mobile. */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+  z-index: 1000;
+  animation: modalFadeIn 0.2s ease-in;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.2s ease-in;
+}
+
+[data-theme='dark'] .modal {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.modal.closing {
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border-radius: 20px 0 0 20px;
+  padding: 0;
+  width: 560px;
+  max-width: 90vw;
+  height: auto;
+  max-height: calc(100dvh - 3rem);
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out;
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-right: none;
+  outline: none;
+  transition: transform 0.2s ease-in;
+}
+
+.modal-content.closing {
+  transform: translateX(100%);
+}
+
+/* Drag handle only appears on the mobile bottom sheet */
+.sheet-handle {
+  display: none;
+}
+
+/* A theme-invariant frosted-glass circle, not a themed card: it needs to
+   stay readable over whatever sits behind it - a plain header in the type
+   filter and generation sheets, but a colorful gradient plus character art
+   in the Pokemon detail sheet - and a fixed dark/light pairing per theme
+   can't guarantee contrast against unpredictable art underneath it. */
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(20, 20, 20, 0.45);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+
+/* Invisible padding around the visible circle for a 44px tap target */
+.close-button::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+@media (hover: hover) {
+  .close-button:hover {
+    background: rgba(20, 20, 20, 0.65);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+
+  .modal-content {
+    width: calc(100% - 1.5rem);
+    max-width: calc(100% - 1.5rem);
+    height: auto;
+    max-height: calc(100dvh - 4rem - env(safe-area-inset-top, 0px));
+    margin: 0 0.75rem;
+    border-radius: 20px 20px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-content.closing {
+    transform: translateY(100%);
+    transition-timing-function: ease-in;
+  }
+
+  .modal-content.dragging {
+    transition: none;
+  }
+
+  .sheet-handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    z-index: 11;
+    cursor: grab;
+  }
+
+  .sheet-handle span {
+    width: 40px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(128, 128, 128, 0.55);
+  }
+
+  /* Let the sheet be dragged without the browser scrolling or refreshing */
+  [data-sheet-drag] {
+    touch-action: none;
+  }
+
+  .close-button {
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+
+  .close-button::before {
+    inset: -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal,
+  .modal-content {
+    animation: none;
+    transition: none;
+  }
+}

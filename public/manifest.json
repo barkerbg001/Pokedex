@@ -1,51 +1,42 @@
 {
+  "id": "/",
   "short_name": "Pokédex",
   "name": "Pokédex - Pokémon Browser",
   "description": "A modern Pokédex web application to browse and search Pokémon",
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon-16x16.png",
-      "type": "image/png",
-      "sizes": "16x16",
-      "purpose": "any"
-    },
-    {
-      "src": "favicon-32x32.png",
-      "type": "image/png",
-      "sizes": "32x32",
-      "purpose": "any"
-    },
     {
       "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "apple-touch-icon.png",
+      "src": "maskable-192.png",
       "type": "image/png",
-      "sizes": "180x180",
-      "purpose": "any"
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#000000",
-  "background_color": "#ffffff",
+  "theme_color": "#d4f3fb",
+  "background_color": "#eaf7fc",
   "categories": ["games", "entertainment", "education"],
   "screenshots": [],
   "shortcuts": [
@@ -54,7 +45,24 @@
       "short_name": "Search",
       "description": "Search for Pokémon by name",
       "url": "/?action=search",
-      "icons": [{ "src": "logo192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Favorites",
+      "short_name": "Favorites",
+      "description": "Your favorite Pokémon",
+      "url": "/?view=favorites",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

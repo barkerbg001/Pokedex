@@ -3,6 +3,6 @@ import App from './App';
 
 test('renders Pokédex heading', () => {
   render(<App />);
-  const headingElement = screen.getByText(/pokédex/i);
+  const headingElement = screen.getByRole('heading', { level: 1, name: 'Pokédex' });
   expect(headingElement).toBeInTheDocument();
 });

@@ -1,44 +1,43 @@
-import { FiSettings } from 'react-icons/fi';
+import { FiSettings, FiStar } from 'react-icons/fi';
+import GenerationList from '../GenerationList/GenerationList';
 import './Menu.css';
 
 function Menu({
   generations,
   selectedGeneration,
   onSelectGeneration,
-  settingsActive,
+  view,
+  favoritesCount,
+  onSelectFavorites,
   onSelectSettings,
 }) {
   return (
     <nav className="menu" aria-label="Main">
       <div className="menu-scroll">
         <h1 className="menu-title">Pokédex</h1>
+        <button
+          type="button"
+          className={`menu-favorites-item ${view === 'favorites' ? 'active' : ''}`}
+          onClick={onSelectFavorites}
+          aria-current={view === 'favorites' ? 'page' : undefined}
+        >
+          <FiStar />
+          <span>Favorites</span>
+          {favoritesCount > 0 && <span className="menu-item-count">{favoritesCount}</span>}
+        </button>
         <h3 className="sidebar-title">Generations</h3>
-        <ul className="generation-list">
-          {generations.map((gen) => (
-            <li key={gen.name}>
-              <button
-                type="button"
-                className={`generation-item ${
-                  !settingsActive && selectedGeneration === gen.name ? 'active' : ''
-                }`}
-                onClick={() => onSelectGeneration(gen.name)}
-                aria-pressed={!settingsActive && selectedGeneration === gen.name}
-              >
-                <span className="generation-item-name">{gen.displayName}</span>
-                {gen.speciesList.length > 0 && (
-                  <span className="generation-item-count">{gen.speciesList.length}</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <GenerationList
+          generations={generations}
+          selectedGeneration={view === 'browse' ? selectedGeneration : null}
+          onSelectGeneration={onSelectGeneration}
+        />
       </div>
 
       <button
         type="button"
-        className={`menu-settings-item ${settingsActive ? 'active' : ''}`}
+        className={`menu-settings-item ${view === 'settings' ? 'active' : ''}`}
         onClick={onSelectSettings}
-        aria-pressed={settingsActive}
+        aria-current={view === 'settings' ? 'page' : undefined}
       >
         <FiSettings />
         <span>Settings</span>

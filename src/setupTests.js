@@ -4,16 +4,30 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Mock IntersectionObserver for tests
+// Mock IntersectionObserver for tests. Reports every observed element as
+// visible, so infinite-scroll loaders load their first batch.
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  observe() {
-    return null;
+  constructor(callback) {
+    this.callback = callback;
   }
-  disconnect() {
-    return null;
+  observe(target) {
+    queueMicrotask(() => this.callback([{ isIntersecting: true, target }], this));
   }
-  unobserve() {
-    return null;
-  }
+  disconnect() {}
+  unobserve() {}
 };
+
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+};
+
+window.matchMedia =
+  window.matchMedia ||
+  ((query) => ({
+    matches: false,
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  }));

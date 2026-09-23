@@ -1,4 +1,4 @@
-import { FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
+import { FiSun, FiMoon, FiMonitor, FiDownload, FiShare } from 'react-icons/fi';
 import './Settings.css';
 
 const THEME_OPTIONS = [
@@ -7,7 +7,7 @@ const THEME_OPTIONS = [
   { value: 'system', label: 'System', icon: FiMonitor },
 ];
 
-function Settings({ themePreference, appliedTheme, onSetTheme }) {
+function Settings({ themePreference, appliedTheme, onSetTheme, install }) {
   return (
     <div className="settings-page">
       <h2 className="settings-title">Settings</h2>
@@ -36,6 +36,31 @@ function Settings({ themePreference, appliedTheme, onSetTheme }) {
           ))}
         </div>
       </div>
+
+      {install?.canInstall && (
+        <div className="settings-row">
+          <div className="settings-row-label">
+            <span className="settings-row-name">Install app</span>
+            <span className="settings-row-description">Quick access and offline browsing</span>
+          </div>
+          <button type="button" className="settings-action-btn" onClick={install.promptInstall}>
+            <FiDownload />
+            <span>Install</span>
+          </button>
+        </div>
+      )}
+
+      {install?.showIosHint && (
+        <div className="settings-row">
+          <div className="settings-row-label">
+            <span className="settings-row-name">Install app</span>
+            <span className="settings-row-description">
+              Tap <FiShare className="settings-inline-icon" aria-hidden="true" /> Share, then{' '}
+              <strong>Add to Home Screen</strong>
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

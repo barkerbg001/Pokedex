@@ -1,3 +1,8 @@
+/* Layout constants shared across components */
+:root {
+  --bottom-nav-height: 64px;
+}
+
 /* Theme Variables */
 :root[data-theme='light'] {
   /* Pokémon GO-inspired sky-blue palette */

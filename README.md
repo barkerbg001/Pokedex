@@ -27,7 +27,7 @@ A modern, feature-rich Progressive Web App (PWA) built with React that provides 
 - **Theme Selector**: Choose Light, Dark, or System (follows the OS preference live) from the Settings view (in the Menu)
 
 ### Progressive Web App (PWA)
-- **Installable**: Clean install prompt that appears on eligible devices
+- **Installable**: Install button in Settings on browsers that support installing web apps
 - **Offline Support**: Service worker caches app-shell assets for offline browsing
 - **App-like Experience**: Standalone mode when installed (no browser UI)
 - **Cross-platform**: Works on desktop, mobile, and tablets
@@ -56,7 +56,7 @@ See [package.json](package.json) for the exact, up-to-date dependency versions.
 ## Prerequisites
 
 - **Node.js** `^20.19.0` or `>=22.12.0` (required by Vite 7) and a matching npm version
-- Internet connection — this app is a thin client over the live PokéAPI and has no offline dataset; it shows an error state with a retry option if the API is unreachable
+- Internet connection — this app is a thin client over the live PokéAPI. Data you've already viewed is cached for offline use; anything else shows an error state with a retry option if the API is unreachable
 
 ## Installation
 
@@ -115,7 +115,6 @@ See [package.json](package.json) for the exact, up-to-date dependency versions.
 Pokedex/
 ├── public/
 │   ├── manifest.json           # PWA manifest configuration
-│   ├── site.webmanifest        # Secondary web app manifest
 │   ├── sw.js                   # Service worker for offline support
 │   ├── robots.txt              # Search engine directives
 │   ├── favicon.ico, favicon-16x16.png, favicon-32x32.png
@@ -199,10 +198,17 @@ This app integrates with the [PokéAPI v2](https://pokeapi.co/docs/v2) to fetch:
 
 ### Offline Support
 - Service worker ([public/sw.js](public/sw.js)) precaches the app shell (`/`, manifest, icons) on install
-- Runtime requests are cached as you browse, so previously viewed pages/assets remain available offline
+- PokéAPI responses are cached as you browse (in a separate cache that survives app updates), so generations, types, search names and every Pokémon you've viewed load offline. The oldest per-Pokémon entries are evicted beyond 600 to bound storage
+- Sprite images are cached the same way (oldest evicted beyond 500)
+- Favorites are always kept available offline: their data, evolution chain, types and sprites are saved when you favorite them, and removed when you unfavorite
+- When offline, the app says so instead of showing errors, and retries anything that failed once you're back online
+- Same-origin files are cached as they're requested
 - Falls back to the cached `index.html` if a navigation request fails offline
 
 ### App-Like Experience
+- Back button/gesture closes sheets and returns to the previous screen
+- Links open where they point: `?view=favorites`, `?gen=generation-iv`, `?pokemon=pikachu`; share any Pokémon from its detail sheet
+- Home-screen shortcuts for Search and Favorites
 - Standalone display mode (no browser UI) when installed
 - Custom app icons for all platforms via [public/manifest.json](public/manifest.json)
 

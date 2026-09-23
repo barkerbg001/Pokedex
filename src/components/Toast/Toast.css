@@ -1,0 +1,86 @@
+/* Sits above modals (z-index 1000) so it's visible while a detail sheet is open */
+.toast-region {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 1.5rem;
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 480px;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  border-radius: 12px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.9rem;
+  font-weight: 600;
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0;
+}
+
+.toast-message::first-letter {
+  text-transform: uppercase;
+}
+
+.toast-action {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: 8px;
+  /* Neutral tint, so it works on the toast's inverted colors in both themes */
+  background: rgba(128, 128, 128, 0.2);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .toast-action:hover {
+    background: rgba(128, 128, 128, 0.35);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Clear the bottom navigation bar */
+  .toast-region {
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  .toast {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

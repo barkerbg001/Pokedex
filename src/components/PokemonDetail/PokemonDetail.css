@@ -1,17 +1,38 @@
+/* Positioned so the sprite (absolutely placed, see .pokemon-image-container)
+   can sit behind the title as background art, clipped to the header. */
 .detail-header {
+  position: relative;
+  overflow: hidden;
+  min-height: 190px;
   background: var(--accent-gradient);
   padding: 2rem 1.5rem 1.5rem;
   color: white;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Name + id, stacked as one title block. Sits above the background sprite
+   (z-index) and its text-shadow keeps it readable over it. Favorite/share
+   live below, in .detail-quick-actions - the sprite is right-anchored (see
+   .pokemon-image-container), so anything else on the right of the header
+   would sit on top of it and fight for attention/contrast with the art. */
+.header-top {
+  position: relative;
+  z-index: 1;
   margin-bottom: 0.75rem;
+  /* Leave room for the close button */
+  padding-right: 3rem;
+}
+
+.detail-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
 .pokemon-name {
+  min-width: 0;
+  overflow-wrap: break-word;
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
@@ -20,15 +41,20 @@
 }
 
 .pokemon-id {
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
-  opacity: 0.9;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  /* Solid enough to stay legible over the sprite behind it, not just the
+     gradient - a translucent chip picked up the sprite's colors and washed
+     the number out where it crossed something light, like a paw or belly. */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
 }
 
 .pokemon-types {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -52,37 +78,64 @@
   background: var(--bg-primary);
 }
 
+/* Background art behind the title, not a separate row: right-anchored,
+   vertically centered, sitting under the text (z-index) so name/id/types
+   stay readable on top of it. Decorative and non-interactive. */
 .pokemon-image-container {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  background: var(--bg-card);
-  padding: 1rem;
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.pokemon-image-container {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  position: absolute;
+  z-index: 0;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .pokemon-image {
-  width: 200px;
-  height: 200px;
+  width: 190px;
+  height: 190px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
-  transition: transform 0.3s ease;
+  opacity: 0.85;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.25));
 }
 
-.pokemon-image:hover {
-  transform: scale(1.1);
+.detail-quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-.total-stats {
-  margin-top: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--accent-color);
+.detail-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.detail-action-btn.active {
+  color: #f5a623;
+}
+
+.detail-action-btn:active {
+  transform: scale(0.9);
+}
+
+@media (hover: hover) {
+  .detail-action-btn:hover {
+    color: var(--accent-color);
+  }
 }
 
 /* Sprites Section */
@@ -124,9 +177,11 @@
   line-height: 1.2;
 }
 
-.sprite-card:hover {
-  border-color: var(--accent-color);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .sprite-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+  }
 }
 
 .sprite-card.active {
@@ -187,9 +242,11 @@
   letter-spacing: 0.5px;
 }
 
-.form-card:hover:not(:disabled) {
-  border-color: var(--accent-color);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .form-card:hover:not(:disabled) {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+  }
 }
 
 .form-card.active {
@@ -202,13 +259,54 @@
   color: var(--accent-color);
 }
 
+.tabs-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--border-color);
   overflow-x: auto;
   padding-bottom: 0.5rem;
+  /* Hidden at every width - the edge fades above are the scroll hint,
+     not the browser's native scrollbar (which showed left/right arrow
+     buttons on some desktop browsers and looked out of place here). */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Edge fades hint that more tabs are scrolled out of view (toggled in JS) */
+.tabs-wrapper::before,
+.tabs-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 2.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tabs-wrapper::before {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--bg-primary));
+}
+
+.tabs-wrapper::after {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--bg-primary));
+}
+
+.tabs-wrapper.fade-left::before,
+.tabs-wrapper.fade-right::after {
+  opacity: 1;
 }
 
 .tab {
@@ -224,9 +322,11 @@
   white-space: nowrap;
 }
 
-.tab:hover {
-  background: var(--tag-hover-bg);
-  color: var(--accent-color);
+@media (hover: hover) {
+  .tab:hover {
+    background: var(--tag-hover-bg);
+    color: var(--accent-color);
+  }
 }
 
 .tab.active {
@@ -252,6 +352,24 @@
   grid-template-columns: 110px 1fr 40px;
   align-items: center;
   gap: 0.75rem;
+}
+
+.stat-row-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.stat-row-total .stat-name {
+  font-size: 1rem;
+}
+
+.stat-row-total .stat-value {
+  font-size: 1.1rem;
+  color: var(--accent-color);
 }
 
 .stat-name {
@@ -304,8 +422,10 @@
   border: 1px solid var(--border-color);
 }
 
-.ability-item:hover {
-  transform: translateX(5px);
+@media (hover: hover) {
+  .ability-item:hover {
+    transform: translateX(5px);
+  }
 }
 
 .ability-name {
@@ -349,8 +469,10 @@
   border: 1px solid var(--border-color);
 }
 
-.evolution-stage:hover {
-  transform: scale(1.05);
+@media (hover: hover) {
+  .evolution-stage:hover {
+    transform: scale(1.05);
+  }
 }
 
 .evolution-name {
@@ -403,9 +525,11 @@
   border-left: 4px solid var(--accent-color);
 }
 
-.move-item:hover {
-  background: var(--bg-card-hover);
-  transform: translateX(5px);
+@media (hover: hover) {
+  .move-item:hover {
+    background: var(--bg-card-hover);
+    transform: translateX(5px);
+  }
 }
 
 .move-name {
@@ -490,9 +614,11 @@
   transition: transform 0.2s ease;
 }
 
-.type-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+@media (hover: hover) {
+  .type-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
 }
 
 /* Scrollbar Styling */
@@ -519,13 +645,65 @@
 }
 
 /* Responsive Design */
+@media (max-width: 768px) {
+  /* Fixed-height sheet so switching tabs doesn't make it jump around */
+  .pokemon-detail-sheet.modal-content {
+    height: 85vh;
+    height: 85dvh;
+  }
+
+  .detail-header {
+    padding: 1.75rem 1.25rem 1rem;
+    min-height: 150px;
+  }
+
+  .detail-body {
+    padding: 1rem;
+    overscroll-behavior: contain;
+  }
+
+  /* Compact hero: a smaller background sprite so stats start above the fold */
+  .pokemon-image {
+    width: 140px;
+    height: 140px;
+  }
+
+  /* Keep the tabs reachable while scrolling long sections like Moves */
+  .tabs-wrapper {
+    position: sticky;
+    top: -1rem;
+    z-index: 2;
+    margin: 0 -1rem 1rem;
+    background: var(--bg-primary);
+  }
+
+  .tabs {
+    padding: 0.5rem 1rem;
+  }
+
+  /* 44px minimum tap target */
+  .tab {
+    min-height: 44px;
+  }
+
+  /* The whole sheet scrolls, so avoid a nested scroll area */
+  .moves-section {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .tab-content {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 600px) {
   .pokemon-name {
     font-size: 1.5rem;
   }
 
   .pokemon-id {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
   }
 
   .tabs {

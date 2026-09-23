@@ -22,6 +22,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.settings-row + .settings-row {
+  margin-top: 0.75rem;
+}
+
 .settings-row-label {
   display: flex;
   flex-direction: column;
@@ -36,6 +40,10 @@
 .settings-row-description {
   font-size: 0.85rem;
   color: var(--text-secondary);
+}
+
+.settings-inline-icon {
+  vertical-align: -0.15em;
 }
 
 .theme-option-group {
@@ -65,15 +73,40 @@
   font-size: 1.25rem;
 }
 
-.theme-option:hover {
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .theme-option:hover {
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+  }
 }
 
 .theme-option.active {
   border-color: var(--accent-color);
   background: var(--tag-hover-bg);
   color: var(--accent-color);
+}
+
+.settings-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent-gradient);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .settings-action-btn:hover {
+    transform: translateY(-1px);
+  }
 }
 
 @media (max-width: 420px) {
