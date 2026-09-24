@@ -50,11 +50,15 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+      .then((cache) => cache.addAll(urlsToCache))
   );
+});
+
+// Lets the page (src/registerSW.js) hand control to a newly-installed SW as
+// soon as the person chooses to, rather than it sitting "waiting" until every
+// tab running the old one is closed
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Serve from any cache (including the favorites cache), otherwise fetch and
@@ -94,8 +98,13 @@ async function trimCache(cache, { isEvictable, maxEntries }) {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
-  const runtimeCache = RUNTIME_CACHES[new URL(event.request.url).origin];
-  if (event.request.method === 'GET' && runtimeCache) {
+  // Only GET is cacheable (cache.put throws for anything else); let a POST/etc.
+  // (e.g. a future favorites sync) go straight to the network, untouched
+  if (event.request.method !== 'GET') return;
+
+  const requestUrl = new URL(event.request.url);
+  const runtimeCache = RUNTIME_CACHES[requestUrl.origin];
+  if (runtimeCache) {
     event.respondWith(runtimeCacheFirst(event, runtimeCache));
     return;
   }
@@ -112,6 +121,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Anything else this SW doesn't specifically handle: only cache same-origin
+  // app-shell requests below; other origins (not in RUNTIME_CACHES above) are
+  // left alone for the browser to fetch normally
+  if (requestUrl.origin !== self.location.origin) return;
+
   event.respondWith(
     // ignoreVary: servers often send `Vary: Origin`, and Vite's <script>/<link>
     // tags use `crossorigin` (so requests carry an Origin header the precache
@@ -124,20 +138,22 @@ self.addEventListener('fetch', (event) => {
         }
         // Clone the request
         const fetchRequest = event.request.clone();
-        
+
         return fetch(fetchRequest).then((response) => {
           // Check if valid response
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-          
+
           // Clone the response
           const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          
+
+          caches.open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, responseToCache))
+            .catch(() => {
+              // Storage full or unavailable: the response is still returned uncached
+            });
+
           return response;
         });
       })
@@ -150,20 +166,24 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches, then take control of any already-open
+// tabs immediately (rather than only on their next navigation), so skipWaiting
+// (triggered by the 'message' handler above) actually hands them the update
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME, API_CACHE_NAME, SPRITE_CACHE_NAME, FAVORITES_CACHE_NAME];
-  
+
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => self.clients.claim())
   );
 });
 

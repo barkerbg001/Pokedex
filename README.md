@@ -5,34 +5,38 @@ A modern, feature-rich Progressive Web App (PWA) built with React that provides 
 ## Features
 
 ### Core Functionality
+
 - **Menu**: A sidebar (left on desktop, horizontal strip on mobile) showing the app title, a Generations list, and Settings. Browse one generation at a time (live region names, e.g. "Generation I (Kanto)", with a Pokémon count per generation) instead of scrolling through the entire Pokédex at once. Switching generations is cached, so flipping back to one you've already viewed is instant.
 - **Infinite Scroll**: Within the selected generation, more Pokémon load automatically as you scroll
 - **Real-time Search**: A search box above the results filters Pokémon instantly as you type, matching against everything loaded so far
-- **API-Backed Search**: If your search doesn't match anything loaded yet, the app looks it up against the full PokéAPI name index and fetches it on demand — search works across *all* generations regardless of which one is selected
+- **API-Backed Search**: If your search doesn't match anything loaded yet, the app looks it up against the full PokéAPI name index and fetches it on demand — search works across _all_ generations regardless of which one is selected
 - **Type Filtering**: A floating filter button opens a modal grid of type badges (applies to whatever's currently loaded/displayed); the button shows a badge with the active filter count
 - **Detailed Pokémon View**: Click any Pokémon to open a side panel with:
-   - Base stats with visual bars (HP, Attack, Defense, Sp. Attack, Sp. Defense, Speed)
-   - Type information and effectiveness chart
-   - A sprite gallery (default, shiny, back, back shiny, official artwork, home — whichever variants exist for that Pokémon)
-   - A Forms tab for Pokémon with alternate forms (e.g. Giratina Altered/Origin, Deoxys's four forms), switching sprites/stats/types/abilities/moves in place
-   - Abilities (including hidden abilities)
-   - Move list with learn methods (first 20 moves)
-   - Full evolution chain
-   - Type matchups (weaknesses, resistances, immunities)
+  - Base stats with visual bars (HP, Attack, Defense, Sp. Attack, Sp. Defense, Speed)
+  - Type information and effectiveness chart
+  - A sprite gallery (default, shiny, back, back shiny, official artwork, home — whichever variants exist for that Pokémon)
+  - A Forms tab for Pokémon with alternate forms (e.g. Giratina Altered/Origin, Deoxys's four forms), switching sprites/stats/types/abilities/moves in place
+  - Abilities (including hidden abilities)
+  - Move list with learn methods (first 20 moves)
+  - Full evolution chain
+  - Type matchups (weaknesses, resistances, immunities)
 
 ### Favorites & Personalization
+
 - **Favorites System**: Mark Pokémon as favorites with the star button
 - **Persistent Storage**: Favorites saved to localStorage and synced across sessions
 - **Quick Access**: Compact horizontal favorites list displayed above the main grid
 - **Theme Selector**: Choose Light, Dark, or System (follows the OS preference live) from the Settings view (in the Menu)
 
 ### Progressive Web App (PWA)
+
 - **Installable**: Install button in Settings on browsers that support installing web apps
 - **Offline Support**: Service worker caches app-shell assets for offline browsing
 - **App-like Experience**: Standalone mode when installed (no browser UI)
 - **Cross-platform**: Works on desktop, mobile, and tablets
 
 ### Technical Features
+
 - **Modern React**: Built with React 19 and hooks (`useState`, `useEffect`, `useCallback`, `useRef`)
 - **Vite Build System**: Fast development server and optimized production builds
 - **Lazy Loading**: Images load progressively via `loading="lazy"`
@@ -61,17 +65,20 @@ See [package.json](package.json) for the exact, up-to-date dependency versions.
 ## Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/barkerbg001/Pokedex.git
    cd Pokedex
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Start the development server:**
+
    ```bash
    npm run dev
    ```
@@ -82,32 +89,38 @@ See [package.json](package.json) for the exact, up-to-date dependency versions.
 ## Usage
 
 ### Browsing by Generation
+
 - Use the **Menu** (left on desktop, a horizontal scrollable strip on mobile) to pick a generation to browse.
 - The grid loads that generation's Pokémon 30 at a time as you scroll; switching generations and coming back reuses what was already loaded.
 
 ### Search and Filter
+
 - **Search**: The search box sits below the page header, above the results. It filters Pokémon by name in real-time; if no loaded Pokémon match, the app queries PokéAPI directly and adds any matches to the grid — search isn't limited to the currently selected generation.
 - **Type Filter**: Click the floating filter button (bottom-right) to open a type-picker modal. This only filters Pokémon already loaded into the grid.
 - **Clear Filters**: Click "Clear all" in the type filter modal to reset it.
 
 ### Favorites
+
 - Click the star icon on any Pokémon card to add/remove favorites.
 - Favorites appear in a horizontal scrollable list above the main grid.
 - Favorites persist across browser sessions via localStorage, and are resolved by id on load regardless of which generation is currently selected, so they always show up in the strip.
 
 ### Detail View
+
 - Click any Pokémon card to open its details in a side panel.
 - View stats, abilities, evolution chain, moves, sprites, forms (if any), and type effectiveness across tabs.
 - Click outside the panel or the ✕ button to close.
 
 ### Settings
+
 - Click **Settings** at the bottom of the Menu to open the settings view.
 - Choose **Light**, **Dark**, or **System** — System follows your OS preference and updates live if it changes while the app is open.
 
 ### Installing as PWA
-- Look for the install prompt at the bottom of the screen.
-- Click "Install" to add the app to your home screen/desktop.
-- Dismissing the prompt hides it for 7 days.
+
+- On Android/desktop Chrome and other browsers that support it: open **Settings** (bottom of the Menu) and click **Install**, shown once the browser fires `beforeinstallprompt`.
+- On iOS/iPadOS Safari (which never fires that event): **Settings** instead shows a hint — tap the Share icon, then **Add to Home Screen**.
+- Once installed, updates are handled automatically: when a new version has finished loading in the background, a "A new version is available" toast offers a **Reload** button to switch to it immediately.
 
 ## Project Structure
 
@@ -115,38 +128,57 @@ See [package.json](package.json) for the exact, up-to-date dependency versions.
 Pokedex/
 ├── public/
 │   ├── manifest.json           # PWA manifest configuration
-│   ├── sw.js                   # Service worker for offline support
+│   ├── sw.js                   # Service worker for offline support (hand-written, not Workbox)
+│   ├── screenshots/             # Manifest screenshots (richer install dialog)
 │   ├── robots.txt              # Search engine directives
 │   ├── favicon.ico, favicon-16x16.png, favicon-32x32.png
-│   ├── logo192.png, logo512.png, apple-touch-icon.png
+│   ├── logo192.png, logo512.png, maskable-192.png, maskable-512.png, apple-touch-icon.png
+│   ├── splash/                  # iOS launch screens
 │   └── types/                  # Pokémon type icons (SVG)
 ├── src/
 │   ├── components/
-│   │   ├── App/                 # Root component: owns theme state, renders InstallPrompt + Pokedex (+ App.css, App.test.js)
-│   │   ├── Pokedex/              # Per-generation loading, search, type filters, favorites, main grid (+ Pokedex.css)
-│   │   ├── Menu/                 # Sidebar nav: app title, generation list, Settings entry (+ Menu.css)
-│   │   ├── Settings/             # Settings view: Light/Dark/System theme selector (+ Settings.css)
-│   │   ├── PokemonDetail/        # Detail side panel (+ PokemonDetail.css)
+│   │   ├── App/                 # Root component: theme + service-worker-update state, renders Pokedex (+ App.css, App.test.js)
+│   │   ├── Pokedex/              # Per-generation loading, search, type filters, favorites, sheet/detail routing (+ Pokedex.css and tests)
+│   │   ├── Menu/                 # Desktop sidebar nav (+ Menu.css)
+│   │   ├── BottomNav/            # Mobile bottom nav, replaces Menu below the 768px breakpoint (+ BottomNav.css)
+│   │   ├── GenerationList/       # Generation picker, used by both Menu and the mobile GenerationSheet (+ .css)
+│   │   ├── PokemonGrid/          # The Pokémon card grid, shared by Browse and Favorites
+│   │   ├── Settings/             # Theme selector + install entry point (+ Settings.css)
+│   │   ├── PokemonDetail/        # Detail side panel/sheet (+ PokemonDetail.css and tests)
 │   │   ├── TypeFilterModal/      # Type filter, opened via a floating action button (+ TypeFilterModal.css)
-│   │   └── InstallPrompt/        # PWA install prompt (+ InstallPrompt.css)
+│   │   ├── Modal/                # Shared overlay shell every sheet/modal renders through (+ Modal.css)
+│   │   ├── Toast/                # Brief bottom-of-screen messages with an optional action (+ Toast.css and tests)
+│   │   └── WhosThatPokemon/      # "Who's That Pokémon?" guessing game (+ .css, quiz.js helpers, and tests)
 │   ├── api/
 │   │   └── pokeapi.js           # Shared PokéAPI client: base URL, in-memory response cache, retry with backoff
-│   ├── styles/
-│   │   └── modal.css            # Shared right-side slide-out panel shell (used by PokemonDetail + TypeFilterModal)
+│   ├── hooks/
+│   │   ├── useFavorites.js       # Favorites state + localStorage persistence
+│   │   ├── useGridNavigation.js  # Roving-tabindex keyboard navigation for the grid/type filter
+│   │   ├── useHistoryLocation.js # Screen/generation/Pokémon/sheet state kept in browser history
+│   │   ├── useInstallPrompt.js   # `beforeinstallprompt` capture + iOS install hint
+│   │   ├── useOnlineStatus.js    # `navigator.onLine` as a hook
+│   │   └── useServiceWorkerUpdate.js  # Registers the SW in production, reports when an update is ready
 │   ├── constants.js            # Shared type colors
-│   ├── registerSW.js           # Service worker registration
+│   ├── registerSW.js           # Service worker registration + update detection (used by useServiceWorkerUpdate)
+│   ├── offlineFavorites.js     # Mirrors favorited Pokémon into a dedicated offline cache
 │   ├── vitals.js               # Vercel Analytics web-vitals reporter
 │   ├── reportWebVitals.js      # web-vitals collection helper
 │   ├── index.js                # App entry point
 │   ├── index.css               # Global styles & resets
+│   ├── sw.test.js              # Node/vm harness that loads public/sw.js into a fake service-worker scope
 │   └── setupTests.js           # Test environment setup
+├── .github/
+│   ├── workflows/ci.yml        # Lint, format check, test with coverage, build — on every PR and push to main
+│   ├── dependabot.yml           # Dependency update schedule
+│   └── ISSUE_TEMPLATE/
 ├── index.html                  # HTML entry point (Vite convention — lives at the repo root)
 ├── eslint.config.js            # ESLint flat config
 ├── .prettierrc.json / .prettierignore
 ├── vite.config.js              # Vite configuration (dev server, build output)
-├── vitest.config.js            # Vitest test configuration
+├── vitest.config.js            # Vitest test configuration (incl. coverage thresholds)
 ├── CONTRIBUTING.md             # Contribution guide
 ├── TODO.md                     # Audit findings and planned work, tracked as checkboxes
+├── FUTURE_IDEAS.md             # Net-new feature ideas, not yet planned work
 ├── LICENSE                     # MIT license
 ├── package.json                # Dependencies and scripts
 └── README.md                   # This file
@@ -155,29 +187,41 @@ Pokedex/
 ## Available Scripts
 
 ### `npm run dev`
+
 Starts the Vite dev server with hot module replacement at `http://localhost:3000`.
 
 ### `npm run build`
+
 Creates an optimized production build in the `build/` folder.
 
 ### `npm run preview`
+
 Serves the built `build/` folder locally, for testing a production build before deploying.
 
 ### `npm test`
-Runs the Vitest suite in watch mode (add `-- --run` for a single non-watching run). Coverage reporting isn't set up yet — see [TODO.md](TODO.md).
+
+Runs the Vitest suite in watch mode (add `-- --run` for a single non-watching run).
+
+### `npm run test:coverage`
+
+Runs the suite once with a coverage report (text summary + an HTML report in `coverage/`).
 
 ### `npm run lint`
+
 Runs ESLint across the project (`eslint.config.js`).
 
 ### `npm run format`
+
 Formats the project with Prettier.
 
 ### `npm run format:check`
+
 Checks formatting without writing changes (useful in CI).
 
 ## API Integration
 
 This app integrates with the [PokéAPI v2](https://pokeapi.co/docs/v2) to fetch:
+
 - **Generations**: The full `/generation` list, each with its English name, main region, and species list — powers the sidebar and per-generation loading
 - **Pokémon Data**: Names, sprites, types, stats, abilities, moves
 - **Species Information**: Evolution chain URL, alternate form varieties
@@ -185,6 +229,7 @@ This app integrates with the [PokéAPI v2](https://pokeapi.co/docs/v2) to fetch:
 - **Type Data**: Damage relations, used to compute weaknesses/resistances/immunities
 
 **Notes on data fetching:**
+
 - Selecting a generation loads its Pokémon species 30 at a time (species → default variety → full Pokémon detail, so a batch is 60+ requests — there's no persistent caching layer yet beyond the in-session generation cache, see [TODO.md](TODO.md)).
 - A one-time, lightweight fetch of every Pokémon's name/URL backs the API-fallback search described above, independent of generation selection.
 - If the PokéAPI is unreachable, the app shows a "404" error state with a "Try Again" button — a full-page error if the generation list itself can't load, or an inline error in place of the grid if a specific generation's Pokémon fail to load.
@@ -192,25 +237,34 @@ This app integrates with the [PokéAPI v2](https://pokeapi.co/docs/v2) to fetch:
 ## PWA Features
 
 ### Installation
-- Custom install prompt, shown when the browser fires `beforeinstallprompt`
-- Dismissible with a 7-day cooldown before it reappears
-- Supports iOS, Android, and desktop platforms that expose PWA install APIs
+
+- An **Install** button in Settings, shown when the browser fires `beforeinstallprompt` (Android, desktop Chrome/Edge, and other browsers that support it)
+- On iOS/iPadOS Safari, which never fires that event, Settings instead shows a Share → Add to Home Screen hint
+- Installable per Chrome's own installability checks (valid manifest, icons, a registered service worker) — `manifest.json` also ships `narrow`/`wide` screenshots for the richer install dialog
+- Orientation is unlocked (`"any"`), with a tightened layout for short landscape screens (mobile bottom nav, search bar, page header)
+
+### Updates
+
+- New deploys are detected automatically — checked for on launch, hourly, and whenever a backgrounded tab regains focus
+- Once a new version has finished installing in the background, a **"A new version is available"** toast offers a **Reload** button; clicking it hands control to the new version and reloads once (no stale old version left running for days, and no forced reload on a first-time install)
 
 ### Offline Support
+
 - Service worker ([public/sw.js](public/sw.js)) precaches the app shell (`/`, manifest, icons) on install
 - PokéAPI responses are cached as you browse (in a separate cache that survives app updates), so generations, types, search names and every Pokémon you've viewed load offline. The oldest per-Pokémon entries are evicted beyond 600 to bound storage
 - Sprite images are cached the same way (oldest evicted beyond 500)
 - Favorites are always kept available offline: their data, evolution chain, types and sprites are saved when you favorite them, and removed when you unfavorite
 - When offline, the app says so instead of showing errors, and retries anything that failed once you're back online
-- Same-origin files are cached as they're requested
+- Same-origin files are cached as they're requested; only `GET` requests are handled, everything else (and any request this app doesn't specifically cache) passes straight through untouched
 - Falls back to the cached `index.html` if a navigation request fails offline
 
 ### App-Like Experience
+
 - Back button/gesture closes sheets and returns to the previous screen
-- Links open where they point: `?view=favorites`, `?gen=generation-iv`, `?pokemon=pikachu`; share any Pokémon from its detail sheet
-- Home-screen shortcuts for Search and Favorites
+- Links open where they point: `?view=favorites` / `settings` / `quiz`, `?gen=generation-iv`, `?pokemon=pikachu`; share any Pokémon from its detail sheet
+- Home-screen shortcuts for Search, Favorites, and the "Who's That Pokémon?" quiz
 - Standalone display mode (no browser UI) when installed
-- Custom app icons for all platforms via [public/manifest.json](public/manifest.json)
+- Custom app icons for all platforms via [public/manifest.json](public/manifest.json), including maskable variants and iOS launch screens
 
 ## Contributing
 
@@ -230,24 +284,29 @@ A full, checkbox-tracked audit of known bugs, tech debt, and planned features li
 ## Deployment
 
 ### Build for Production
+
 ```bash
 npm run build
 ```
+
 Output is written to the `build/` folder.
 
 ### Deploy to Vercel
+
 ```bash
 npm i -g vercel
 vercel
 ```
 
 ### Deploy to Netlify
+
 ```bash
 npm i -g netlify-cli
 netlify deploy --prod --dir=build
 ```
 
 ### Deploy to GitHub Pages
+
 1. Set `base` in [vite.config.js](vite.config.js) to your repo path (e.g. `/Pokedex/`).
 2. Run `npm run build`.
 3. Deploy the `build/` folder to GitHub Pages.
@@ -271,4 +330,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️ by [barkerbg001](https://github.com/barkerbg001)**
 
-*Pokémon and Pokémon character names are trademarks of Nintendo.*
+_Pokémon and Pokémon character names are trademarks of Nintendo._

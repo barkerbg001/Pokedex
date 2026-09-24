@@ -80,16 +80,15 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
   },
   build: {
     outDir: 'build',
     rollupOptions: {
       input: {
-        main: './index.html'
-      }
-    }
+        main: './index.html',
+      },
+    },
   },
-  publicDir: 'public'
+  publicDir: 'public',
 });
-

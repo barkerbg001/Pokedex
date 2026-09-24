@@ -8,7 +8,7 @@ import pokeapi from '../../api/pokeapi';
 import { devWarn } from '../../logger';
 
 // Build the list of sprite variants PokeAPI provides for a Pokemon,
-// skipping any that are missing (mock data only has front_default).
+// skipping any that are missing (not every Pokémon or form has them all).
 function getSpriteVariants(sprites) {
   if (!sprites) return [];
   const candidates = [
@@ -34,6 +34,31 @@ function getDefaultSprite(sprites) {
   );
 }
 
+// Combine each defending type's damage relations into one multiplier per
+// attacking type (their product, not a union), so dual-type Pokémon get the
+// right 4x/2x/0.5x/0.25x/0x groupings instead of listing a type as both a
+// weakness and a resistance when it actually cancels out to 1x.
+function combineEffectiveness(relationsList) {
+  const multiplier = new Map();
+  const apply = (types, factor) =>
+    types.forEach(({ name }) => multiplier.set(name, (multiplier.get(name) ?? 1) * factor));
+  relationsList.forEach(({ double_damage_from, half_damage_from, no_damage_from }) => {
+    apply(double_damage_from, 2);
+    apply(half_damage_from, 0.5);
+    apply(no_damage_from, 0);
+  });
+
+  const groups = { four: [], two: [], half: [], quarter: [], zero: [] };
+  const byMultiplier = { 4: 'four', 2: 'two', 0.5: 'half', 0.25: 'quarter', 0: 'zero' };
+  for (const [name, factor] of multiplier) {
+    const group = byMultiplier[factor];
+    // 1x (a weakness from one type cancelled by a resistance from the other)
+    // is the default and isn't shown
+    if (group) groups[group].push(name);
+  }
+  return groups;
+}
+
 // Turn a variety name like "giratina-origin" into a short label like "Origin",
 // stripping the shared species name prefix (e.g. "giratina-").
 function getFormLabel(varietyName, speciesName) {
@@ -45,6 +70,15 @@ function getFormLabel(varietyName, speciesName) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
+
+// Order and labels for the groups combineEffectiveness produces
+const EFFECTIVENESS_GROUPS = [
+  { key: 'four', className: 'weak', title: 'Weak Against (4x damage)' },
+  { key: 'two', className: 'weak', title: 'Weak Against (2x damage)' },
+  { key: 'half', className: 'resistant', title: 'Resistant To (0.5x damage)' },
+  { key: 'quarter', className: 'resistant', title: 'Resistant To (0.25x damage)' },
+  { key: 'zero', className: 'immune', title: 'Immune To (0x damage)' },
+];
 
 function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose }) {
   const [displayedPokemon, setDisplayedPokemon] = useState(pokemon);
@@ -158,23 +192,17 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
     async function fetchEffectiveness() {
       setEffectivenessLoading(true);
       try {
-        const rel = { weak: new Set(), resistant: new Set(), immune: new Set() };
-        for (const t of displayedPokemon.types) {
-          const typeData = await pokeapi.get(t.type.url);
-          typeData.data.damage_relations.double_damage_from.forEach((x) => rel.weak.add(x.name));
-          typeData.data.damage_relations.half_damage_from.forEach((x) => rel.resistant.add(x.name));
-          typeData.data.damage_relations.no_damage_from.forEach((x) => rel.immune.add(x.name));
-        }
+        const relations = await Promise.all(
+          displayedPokemon.types.map((t) =>
+            pokeapi.get(t.type.url).then((r) => r.data.damage_relations)
+          )
+        );
         if (ignore) return;
-        setTypeEffectiveness({
-          weak: Array.from(rel.weak),
-          resistant: Array.from(rel.resistant),
-          immune: Array.from(rel.immune),
-        });
+        setTypeEffectiveness(combineEffectiveness(relations));
       } catch {
         if (ignore) return;
         devWarn('Could not load type effectiveness data');
-        setTypeEffectiveness({ weak: [], resistant: [], immune: [] });
+        setTypeEffectiveness({ four: [], two: [], half: [], quarter: [], zero: [] });
       } finally {
         if (!ignore) setEffectivenessLoading(false);
       }
@@ -381,70 +409,31 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
             <div className="effectiveness-section">
               {effectivenessLoading ? (
                 <div className="loading-spinner">Loading type effectiveness...</div>
-              ) : !typeEffectiveness.weak?.length &&
-                !typeEffectiveness.resistant?.length &&
-                !typeEffectiveness.immune?.length ? (
+              ) : EFFECTIVENESS_GROUPS.every(({ key }) => !typeEffectiveness[key]?.length) ? (
                 <div className="no-evolution">Could not load type effectiveness data.</div>
               ) : (
-                <>
-                  {typeEffectiveness.weak && typeEffectiveness.weak.length > 0 && (
-                    <div className="effectiveness-group">
-                      <h4 className="effectiveness-title weak">Weak Against (2x damage)</h4>
-                      <div className="type-pills">
-                        {typeEffectiveness.weak.map((type) => (
-                          <span
-                            key={type}
-                            className="type-pill"
-                            style={{
-                              backgroundColor: getTypeColor(type),
-                              color: getTypeTextColor(type),
-                            }}
-                          >
-                            {type}
-                          </span>
-                        ))}
+                EFFECTIVENESS_GROUPS.map(
+                  ({ key, className, title }) =>
+                    typeEffectiveness[key]?.length > 0 && (
+                      <div key={key} className="effectiveness-group">
+                        <h4 className={`effectiveness-title ${className}`}>{title}</h4>
+                        <div className="type-pills">
+                          {typeEffectiveness[key].map((type) => (
+                            <span
+                              key={type}
+                              className="type-pill"
+                              style={{
+                                backgroundColor: getTypeColor(type),
+                                color: getTypeTextColor(type),
+                              }}
+                            >
+                              {type}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {typeEffectiveness.resistant && typeEffectiveness.resistant.length > 0 && (
-                    <div className="effectiveness-group">
-                      <h4 className="effectiveness-title resistant">Resistant To (0.5x damage)</h4>
-                      <div className="type-pills">
-                        {typeEffectiveness.resistant.map((type) => (
-                          <span
-                            key={type}
-                            className="type-pill"
-                            style={{
-                              backgroundColor: getTypeColor(type),
-                              color: getTypeTextColor(type),
-                            }}
-                          >
-                            {type}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {typeEffectiveness.immune && typeEffectiveness.immune.length > 0 && (
-                    <div className="effectiveness-group">
-                      <h4 className="effectiveness-title immune">Immune To (0x damage)</h4>
-                      <div className="type-pills">
-                        {typeEffectiveness.immune.map((type) => (
-                          <span
-                            key={type}
-                            className="type-pill"
-                            style={{
-                              backgroundColor: getTypeColor(type),
-                              color: getTypeTextColor(type),
-                            }}
-                          >
-                            {type}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
+                    )
+                )
               )}
             </div>
           )}

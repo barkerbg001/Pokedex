@@ -11,12 +11,13 @@ npm run preview         # serve the build/ output locally
 npm test                # vitest in watch mode
 npm test -- --run       # single non-watching run (use in CI/scripts)
 npm test -- --run src/components/Pokedex/Pokedex.favorites.test.js  # single test file
+npm run test:coverage    # single run with a coverage report (text + html in coverage/)
 npm run lint             # eslint .
 npm run format           # prettier --write .
 npm run format:check     # prettier --check . (no writes)
 ```
 
-No test coverage reporting is configured yet.
+`vitest.config.js` sets coverage thresholds (lines/statements/functions/branches) a little under actual coverage, as a regression floor rather than a target — raise them as more of the app gets covered.
 
 ## Architecture
 
@@ -26,13 +27,13 @@ This is a project-wide, load-bearing convention: every component file is `Compon
 
 ### Data layer: one API client, cached indefinitely
 
-All PokéAPI access goes through [src/api/pokeapi.js](src/api/pokeapi.js) — a single axios instance with an in-memory `Map` cache keyed by URL. Because PokéAPI resources are immutable, responses are cached forever for the life of the tab (no TTL/eviction), and the cache stores the in-flight *promise*, not just the resolved value, so concurrent requests for the same URL are deduped automatically. Failed requests are retried twice with backoff and are not cached. `pokeapi.get()` accepts either a path relative to the base URL or a full URL (as returned in other PokéAPI responses' `.url` fields), so callers rarely need to know which they have.
+All PokéAPI access goes through [src/api/pokeapi.js](src/api/pokeapi.js) — a single axios instance with an in-memory `Map` cache keyed by URL. Because PokéAPI resources are immutable, responses are cached forever for the life of the tab (no TTL/eviction), and the cache stores the in-flight _promise_, not just the resolved value, so concurrent requests for the same URL are deduped automatically. Failed requests are retried twice with backoff and are not cached. `pokeapi.get()` accepts either a path relative to the base URL or a full URL (as returned in other PokéAPI responses' `.url` fields), so callers rarely need to know which they have.
 
 Never call `axios` directly for PokéAPI requests — always go through this client, or you lose caching/dedup/retry and diverge from the rest of the app.
 
 ### Routing: hand-rolled history, no react-router
 
-There's no router dependency. [src/hooks/useHistoryLocation.js](src/hooks/useHistoryLocation.js) owns `window.history` directly: `view`/`gen`/`pokemon` are reflected in the URL (`?view=favorites`, `?gen=generation-iv`, `?pokemon=pikachu`) so reloads/deep links/shortcuts work, while an open sheet (`sheet: 'filter' | 'generations'`) lives only in the history *entry* (not the URL) so the back button/gesture can close it without changing the address bar. `navigate()` pushes or replaces an entry; an entry for an already-open sheet gets replaced (not stacked) so back doesn't reopen it. `closeOverlay(key, value)` is the counterpart used to close something `navigate()` opened — it steps back through history when that's still consistent, otherwise just clears local state — which is what makes the hardware/gesture back button and a sheet's own close (✕) button behave identically. [src/components/Pokedex/Pokedex.js](src/components/Pokedex/Pokedex.js) is the sole consumer; its `view`/`detailName`/`sheet` state mirrors the current history entry via `handleLocationChangeRef`.
+There's no router dependency. [src/hooks/useHistoryLocation.js](src/hooks/useHistoryLocation.js) owns `window.history` directly: `view`/`gen`/`pokemon` are reflected in the URL (`?view=favorites` / `quiz` / `settings`, `?gen=generation-iv`, `?pokemon=pikachu`) so reloads/deep links/shortcuts work, while an open sheet (`sheet: 'filter' | 'generations'`) lives only in the history _entry_ (not the URL) so the back button/gesture can close it without changing the address bar. `navigate()` pushes or replaces an entry; an entry for an already-open sheet gets replaced (not stacked) so back doesn't reopen it. `closeOverlay(key, value)` is the counterpart used to close something `navigate()` opened — it steps back through history when that's still consistent, otherwise just clears local state — which is what makes the hardware/gesture back button and a sheet's own close (✕) button behave identically. [src/components/Pokedex/Pokedex.js](src/components/Pokedex/Pokedex.js) is the sole consumer; its `view`/`detailName`/`sheet` state mirrors the current history entry via `handleLocationChangeRef`.
 
 ### `Pokedex.js` is the app's core stateful component
 
@@ -44,7 +45,7 @@ There's no router dependency. [src/hooks/useHistoryLocation.js](src/hooks/useHis
 
 ### PWA / service worker: custom, not Workbox
 
-[public/sw.js](public/sw.js) is hand-written (no Workbox). [vite.config.js](vite.config.js)'s `swBuildManifest` plugin rewrites two placeholders in the *built* `sw.js` at build time: `__BUILD_HASH__` becomes a hash of the rest of the build output (so `CACHE_NAME` changes only when something actually changed, with no manual version bump), and `/* __BUILD_ASSETS__ */ []` becomes the list of hashed `assets/` and `types/` files to precache. In dev these placeholders are left literal — the build fails loudly if either placeholder goes missing, so don't rename them without updating the plugin. Same-origin app files, `pokeapi.co` API responses, and sprite images each get their own long-lived cache (survives deploys; only `CACHE_NAME` itself is deploy-versioned). [src/offlineFavorites.js](src/offlineFavorites.js) proactively mirrors whatever a favorited Pokémon needs (data, species, evolution chain, types, sprites) into a dedicated `pokedex-favorites-v1` cache so Favorites works offline regardless of recent browsing — its cache name must stay in sync with the one `sw.js` reads, since they're two independent hardcoded strings, not a shared constant.
+[public/sw.js](public/sw.js) is hand-written (no Workbox). [vite.config.js](vite.config.js)'s `swBuildManifest` plugin rewrites two placeholders in the _built_ `sw.js` at build time: `__BUILD_HASH__` becomes a hash of the rest of the build output (so `CACHE_NAME` changes only when something actually changed, with no manual version bump), and `/* __BUILD_ASSETS__ */ []` becomes the list of hashed `assets/` and `types/` files to precache. In dev these placeholders are left literal — the build fails loudly if either placeholder goes missing, so don't rename them without updating the plugin. Same-origin app files, `pokeapi.co` API responses, and sprite images each get their own long-lived cache (survives deploys; only `CACHE_NAME` itself is deploy-versioned). [src/offlineFavorites.js](src/offlineFavorites.js) proactively mirrors whatever a favorited Pokémon needs (data, species, evolution chain, types, sprites) into a dedicated `pokedex-favorites-v1` cache so Favorites works offline regardless of recent browsing — its cache name must stay in sync with the one `sw.js` reads, since they're two independent hardcoded strings, not a shared constant.
 
 ### Shared constants and logging
 

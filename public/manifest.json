@@ -34,11 +34,26 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "theme_color": "#d4f3fb",
   "background_color": "#eaf7fc",
   "categories": ["games", "entertainment", "education"],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "screenshots/narrow-browse.png",
+      "type": "image/png",
+      "sizes": "390x844",
+      "form_factor": "narrow",
+      "label": "Browsing Generation I on a phone"
+    },
+    {
+      "src": "screenshots/wide-browse.png",
+      "type": "image/png",
+      "sizes": "1280x800",
+      "form_factor": "wide",
+      "label": "Browsing Generation I on desktop"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Search Pokémon",
@@ -57,6 +72,18 @@
       "short_name": "Favorites",
       "description": "Your favorite Pokémon",
       "url": "/?view=favorites",
+      "icons": [
+        {
+          "src": "logo192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Who’s That Pokémon?",
+      "short_name": "Quiz",
+      "description": "Guess the Pokémon from its silhouette",
+      "url": "/?view=quiz",
       "icons": [
         {
           "src": "logo192.png",

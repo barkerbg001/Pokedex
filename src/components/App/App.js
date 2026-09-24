@@ -2,6 +2,7 @@ import './App.css';
 import { useState, useEffect } from 'react';
 import Pokedex from '../Pokedex/Pokedex';
 import useInstallPrompt from '../../hooks/useInstallPrompt';
+import useServiceWorkerUpdate from '../../hooks/useServiceWorkerUpdate';
 
 function App() {
   // The user's chosen preference: 'light', 'dark', or 'system'
@@ -9,6 +10,7 @@ function App() {
     return localStorage.getItem('pokedex-theme') || 'system';
   });
   const install = useInstallPrompt();
+  const swUpdate = useServiceWorkerUpdate();
   const [systemPrefersDark, setSystemPrefersDark] = useState(
     () => window.matchMedia('(prefers-color-scheme: dark)').matches
   );
@@ -46,6 +48,7 @@ function App() {
         appliedTheme={appliedTheme}
         onSetTheme={setThemePreference}
         install={install}
+        swUpdate={swUpdate}
       />
     </div>
   );

@@ -1,28 +1,68 @@
 .generation-list {
   list-style: none;
   margin: 0;
-  padding: 0 1rem;
+  padding: 0 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.15rem;
 }
 
+/* "[IV] Sinnoh  107" */
 .generation-item {
   width: 100%;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 0.6rem;
   cursor: pointer;
   text-align: left;
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.generation-item-numeral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 2rem;
+  height: 1.6rem;
+  padding: 0 0.3rem;
+  border-radius: 7px;
+  background: var(--tag-hover-bg);
+  color: var(--accent-color);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+}
+
+/* The light theme's bright teal is too faint on its own tint */
+:root[data-theme='light'] .generation-item:not(.active) .generation-item-numeral {
+  color: #0b7a93;
+}
+
+.generation-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.generation-item-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
 }
 
 @media (hover: hover) {
@@ -32,24 +72,23 @@
   }
 }
 
+.generation-item:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
 .generation-item.active {
   background: var(--accent-gradient);
   color: #fff;
-  border-color: transparent;
 }
 
-.generation-item-count {
-  font-size: 0.75rem;
-  font-weight: 700;
-  opacity: 0.85;
-  background: rgba(0, 0, 0, 0.08);
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  flex-shrink: 0;
+.generation-item.active .generation-item-numeral {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
 .generation-item.active .generation-item-count {
-  background: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* Generation picker sheet */
@@ -72,7 +111,16 @@
   padding: 1rem 0 1.25rem;
 }
 
+.generation-sheet .generation-list {
+  padding: 0 1rem;
+  gap: 0.3rem;
+}
+
 .generation-sheet .generation-item {
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.85rem;
   font-size: 0.95rem;
+}
+
+.generation-sheet .generation-item-count {
+  font-size: 0.8rem;
 }

@@ -1,4 +1,4 @@
-import { FiGrid, FiLayers, FiStar, FiFilter, FiSettings } from 'react-icons/fi';
+import { FiGrid, FiLayers, FiStar, FiHelpCircle, FiSettings } from 'react-icons/fi';
 import './BottomNav.css';
 
 // "generation-iv" -> "Gen IV"
@@ -12,11 +12,10 @@ function getShortGenerationLabel(generation) {
 function BottomNav({
   currentGeneration,
   view,
-  filterCount,
   onBrowse,
   onOpenGenerations,
   onSelectFavorites,
-  onOpenFilter,
+  onSelectQuiz,
   onSelectSettings,
 }) {
   return (
@@ -50,16 +49,13 @@ function BottomNav({
       </button>
       <button
         type="button"
-        className="bottom-nav-item"
-        onClick={onOpenFilter}
-        aria-haspopup="dialog"
-        aria-label={filterCount > 0 ? `Filter (${filterCount} active)` : 'Filter'}
+        className={`bottom-nav-item ${view === 'quiz' ? 'active' : ''}`}
+        onClick={onSelectQuiz}
+        aria-current={view === 'quiz' ? 'page' : undefined}
+        aria-label="Who’s That Pokémon?"
       >
-        <span className="bottom-nav-icon">
-          <FiFilter />
-          {filterCount > 0 && <span className="bottom-nav-badge">{filterCount}</span>}
-        </span>
-        <span>Filter</span>
+        <FiHelpCircle />
+        <span>Quiz</span>
       </button>
       <button
         type="button"

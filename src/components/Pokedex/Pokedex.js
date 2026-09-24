@@ -10,6 +10,7 @@ import Settings from '../Settings/Settings';
 import TypeFilterModal from '../TypeFilterModal/TypeFilterModal';
 import PokemonGrid from '../PokemonGrid/PokemonGrid';
 import Toast from '../Toast/Toast';
+import WhosThatPokemon from '../WhosThatPokemon/WhosThatPokemon';
 import pokeapi from '../../api/pokeapi';
 import { typeColors } from '../../constants';
 import useFavorites from '../../hooks/useFavorites';
@@ -25,13 +26,14 @@ function mergeUniqueById(prev, incoming) {
   return Array.from(map.values());
 }
 
-function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
+function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate }) {
   // Where the user is (screen, generation, open Pokémon, open sheet) lives in
   // browser history, so back/forward, reloads and shared links work; these
   // states mirror the current history entry (see applyLocation below)
   const handleLocationChangeRef = useRef(null);
   const appHistory = useHistoryLocation((location) => handleLocationChangeRef.current(location));
-  // Which screen is showing: 'browse' (a generation), 'favorites' or 'settings'
+  // Which screen is showing: 'browse' (a generation), 'favorites', 'quiz' or
+  // 'settings'
   const [view, setView] = useState(appHistory.initial.view);
   // The open detail sheet's Pokémon: its name (from the URL) and, once found or
   // fetched, its data
@@ -51,6 +53,10 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
   const [batchError, setBatchError] = useState(null);
   const loader = useRef(null);
   const searchInputRef = useRef(null);
+  // Sits just above the sticky search bar; once it scrolls out of view the bar
+  // is stuck to the top and gets a background (see .search-section.stuck)
+  const searchSentinelRef = useRef(null);
+  const [searchStuck, setSearchStuck] = useState(false);
   // Name of the generation whose batch is currently in flight, if any
   const fetchingGenerationRef = useRef(null);
   const pokemonsRef = useRef([]);
@@ -63,7 +69,23 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
   const [toast, setToast] = useState(null);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  const showToast = (message, action) => setToast({ id: Date.now(), message, action });
+  const showToast = (message, action, { duration } = {}) =>
+    setToast({ id: Date.now(), message, action, duration });
+
+  // Tell the user once a new version has installed and is ready to switch to.
+  // Longer-lived than a typical toast: easy to miss, and (unlike "Added to
+  // Favorites") there's no other way to notice it until the next visit.
+  useEffect(() => {
+    if (!swUpdate?.updateAvailable) return;
+    showToast(
+      'A new version is available',
+      { label: 'Reload', onClick: swUpdate.reload },
+      { duration: 20000 }
+    );
+    // Only re-run if it wasn't available before; showToast/swUpdate.reload
+    // are new on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swUpdate?.updateAvailable]);
 
   const toggleFavorite = (pokemon) => {
     vibrate();
@@ -122,14 +144,14 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
       const list = details
         .map(({ data: gen }) => {
           const englishName = gen.names.find((n) => n.language.name === 'en')?.name || gen.name;
-          const region = gen.main_region?.name;
-          const displayName = region
-            ? `${englishName} (${region.charAt(0).toUpperCase()}${region.slice(1)})`
-            : englishName;
+          const regionName = gen.main_region?.name;
+          const region = regionName && regionName.charAt(0).toUpperCase() + regionName.slice(1);
+          const displayName = region ? `${englishName} (${region})` : englishName;
           return {
             id: gen.id,
             name: gen.name,
             displayName,
+            region,
             speciesList: gen.pokemon_species.map((s) => ({ name: s.name, url: s.url })),
           };
         })
@@ -430,6 +452,18 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
     // new loader element, which needs observing
   }, [loadGenerationBatch, view]);
 
+  // The search bar only exists on Browse and Favorites, so re-observe on view change
+  useEffect(() => {
+    const sentinel = searchSentinelRef.current;
+    if (!sentinel) {
+      setSearchStuck(false);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => setSearchStuck(!entry.isIntersecting));
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [view]);
+
   // Search and type filters apply to both Browse and Favorites
   const applyFilters = (list) =>
     list
@@ -481,20 +515,17 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
         view={view}
         favoritesCount={favorites.count}
         onSelectFavorites={() => selectView('favorites')}
+        onSelectQuiz={() => selectView('quiz')}
         onSelectSettings={() => selectView('settings')}
       />
 
       <BottomNav
         currentGeneration={currentGeneration}
         view={view}
-        filterCount={selectedTypes.length}
         onBrowse={() => selectView('browse')}
         onOpenGenerations={() => openSheet('generations')}
         onSelectFavorites={() => selectView('favorites')}
-        onOpenFilter={() =>
-          // Filters apply to Favorites too, so stay there; leave Settings for Browse
-          go({ sheet: 'filter', ...(view === 'settings' && { view: 'browse' }) })
-        }
+        onSelectQuiz={() => selectView('quiz')}
         onSelectSettings={() => selectView('settings')}
       />
 
@@ -515,6 +546,8 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
             onSetTheme={onSetTheme}
             install={install}
           />
+        ) : view === 'quiz' ? (
+          <WhosThatPokemon generations={generations} onOpenPokemon={openPokemon} />
         ) : (
           <>
             <h2 className="page-title">
@@ -531,10 +564,11 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install }) {
               </p>
             )}
 
-            {/* Search */}
+            {/* Search, which sticks to the top of the screen while scrolling */}
+            <div ref={searchSentinelRef} className="search-sentinel" aria-hidden="true" />
             <form
               role="search"
-              className="search-section"
+              className={`search-section ${searchStuck ? 'stuck' : ''}`}
               onSubmit={(e) => {
                 // Results already update as you type; Enter just dismisses the keyboard
                 e.preventDefault();

@@ -6,7 +6,7 @@ import globals from 'globals';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['build/**', 'dist/**', 'node_modules/**', 'public/sw.js'] },
+  { ignores: ['build/**', 'dist/**', 'node_modules/**', 'coverage/**', 'public/sw.js'] },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.jsx'],

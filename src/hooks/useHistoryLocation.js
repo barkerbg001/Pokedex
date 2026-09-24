@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // open filter or generation sheet) only lives in the history entry, so the back
 // button can close it. `index` counts entries this app pushed, so an overlay
 // can tell whether stepping back would leave the app.
-const VIEWS = ['browse', 'favorites', 'settings'];
+const VIEWS = ['browse', 'favorites', 'quiz', 'settings'];
 
 export function parseLocation(search) {
   const params = new URLSearchParams(search);

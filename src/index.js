@@ -4,7 +4,8 @@ import './index.css';
 import App from './components/App/App';
 import reportWebVitals from './reportWebVitals';
 import { sendToVercelAnalytics } from './vitals';
-import './registerSW';
+// Service worker registration lives in useServiceWorkerUpdate (used by App),
+// not here, so it can be gated to production and report update availability
 
 const container = document.getElementById('root');
 const root = createRoot(container);

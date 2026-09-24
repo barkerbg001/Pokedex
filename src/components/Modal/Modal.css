@@ -79,6 +79,8 @@
   border-right: none;
   outline: none;
   transition: transform 0.2s ease-in;
+  /* The desktop panel touches the right edge; keep its content off a notch */
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .modal-content.closing {
@@ -98,7 +100,7 @@
 .close-button {
   position: absolute;
   top: 1rem;
-  right: 1rem;
+  right: calc(1rem + env(safe-area-inset-right, 0px));
   background: rgba(20, 20, 20, 0.45);
   backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -133,6 +135,8 @@
   .modal {
     align-items: flex-end;
     justify-content: stretch;
+    /* Keep the sheet clear of a side notch in landscape */
+    padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
   }
 
   .modal-content {
@@ -144,7 +148,7 @@
     border-radius: 20px 20px 0 0;
     border: 1px solid var(--border-color);
     border-bottom: none;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
     animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -193,6 +197,14 @@
 
   .close-button::before {
     inset: -6px;
+  }
+}
+
+/* Landscape phones wide enough for the desktop panel: use nearly the full height */
+@media (min-width: 769px) and (orientation: landscape) and (max-height: 500px) {
+  .modal-content {
+    max-height: calc(100dvh - 1rem);
+    margin: 0.5rem 0;
   }
 }
 

@@ -3,6 +3,13 @@
   --bottom-nav-height: 64px;
 }
 
+/* Short landscape screens get a slimmer bar (see BottomNav.css) */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --bottom-nav-height: 48px;
+  }
+}
+
 /* Theme Variables */
 :root[data-theme='light'] {
   /* Pokémon GO-inspired sky-blue palette */

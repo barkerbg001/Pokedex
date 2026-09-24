@@ -18,7 +18,8 @@
     bottom: 0;
     z-index: 50;
     height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+      env(safe-area-inset-left, 0px);
     background: var(--bg-card);
     border-top: 1px solid var(--border-color);
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
@@ -66,25 +67,17 @@
   .bottom-nav-item.active {
     color: var(--accent-color);
   }
+}
 
-  .bottom-nav-icon {
-    position: relative;
-    display: inline-flex;
+/* Short landscape screens: icon and label side by side in a slimmer bar */
+@media (max-width: 768px) and (orientation: landscape) and (max-height: 500px) {
+  .bottom-nav-item {
+    flex-direction: row;
+    gap: 0.4rem;
+    font-size: 0.75rem;
   }
 
-  .bottom-nav-badge {
-    position: absolute;
-    top: -6px;
-    right: -10px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    background: #ff4d4f;
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    line-height: 16px;
-    text-align: center;
+  .bottom-nav-item svg {
+    font-size: 1.15rem;
   }
 }
