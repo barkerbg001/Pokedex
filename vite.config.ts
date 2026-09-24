@@ -11,7 +11,7 @@ const BUILD_ASSETS_PLACEHOLDER = '/* __BUILD_ASSETS__ */ []';
 // shell list in sw.js: Vite's hashed bundles and the type filter icons
 const PRECACHE_DIRS = ['assets', 'types'];
 
-function listFiles(dir) {
+function listFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     return entry.isDirectory() ? listFiles(path) : [path];
@@ -24,11 +24,11 @@ function listFiles(dir) {
 // - The precache list gets Vite's hashed JS/CSS bundles (plus type icons), so
 //   the app shell works offline right after the service worker installs.
 function swBuildManifest() {
-  let outDir;
+  let outDir: string;
   return {
     name: 'sw-build-manifest',
-    apply: 'build',
-    configResolved(config) {
+    apply: 'build' as const,
+    configResolved(config: { build: { outDir: string } }) {
       outDir = config.build.outDir;
     },
     closeBundle() {
@@ -46,7 +46,7 @@ function swBuildManifest() {
 
       const precacheUrls = files
         .map((file) => relative(outDir, file).split(sep).join('/'))
-        .filter((path) => PRECACHE_DIRS.includes(path.split('/')[0]))
+        .filter((path) => PRECACHE_DIRS.includes(path.split('/')[0]!))
         .map((path) => `/${path}`);
 
       let source = readFileSync(swPath, 'utf8');
@@ -66,18 +66,6 @@ function swBuildManifest() {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), swBuildManifest()],
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
-    exclude: [],
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
-      },
-    },
-  },
   server: {
     port: 3000,
     open: true,

@@ -2,13 +2,16 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import pokeapi from '../api/pokeapi';
 import { devWarn } from '../logger';
 import { syncOfflineFavorites } from '../offlineFavorites';
+import type { Pokemon } from '../types/pokeapi';
 
 const STORAGE_KEY = 'pokedex:favorites';
 
-function readStoredIds() {
+function readStoredIds(): number[] {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(parsed) ? parsed.filter(Number.isInteger) : [];
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is number => Number.isInteger(id)) : [];
   } catch {
     return [];
   }
@@ -19,10 +22,10 @@ function readStoredIds() {
 // Favorite data lives here, separate from whatever generation is being browsed:
 // ids are resolved from `loadedPokemons` when possible, and fetched otherwise,
 // so the Favorites view works no matter which generation is loaded.
-function useFavorites(loadedPokemons) {
+function useFavorites(loadedPokemons: Pokemon[]) {
   const [ids, setIds] = useState(readStoredIds);
   // id -> Pokemon, for favorites that aren't in `loadedPokemons`
-  const [fetched, setFetched] = useState({});
+  const [fetched, setFetched] = useState<Record<number, Pokemon>>({});
   const [failed, setFailed] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
 
@@ -36,15 +39,21 @@ function useFavorites(loadedPokemons) {
 
   // Pick up changes made in another tab
   useEffect(() => {
-    const handleStorage = (e) => {
+    const handleStorage = (e: StorageEvent): void => {
       if (e.key === STORAGE_KEY) setIds(readStoredIds());
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const loadedById = useMemo(() => new Map(loadedPokemons.map((p) => [p.id, p])), [loadedPokemons]);
-  const lookup = useCallback((id) => fetched[id] || loadedById.get(id), [fetched, loadedById]);
+  const loadedById = useMemo(
+    () => new Map(loadedPokemons.map((p) => [p.id, p])),
+    [loadedPokemons]
+  );
+  const lookup = useCallback(
+    (id: number): Pokemon | undefined => fetched[id] || loadedById.get(id),
+    [fetched, loadedById]
+  );
 
   const missingIds = ids.filter((id) => !lookup(id));
   const missingKey = missingIds.join(',');
@@ -54,18 +63,20 @@ function useFavorites(loadedPokemons) {
     let ignore = false;
     setFailed(false);
     const idsToFetch = missingKey.split(',');
-    Promise.allSettled(idsToFetch.map((id) => pokeapi.get(`/pokemon/${id}`))).then((results) => {
-      if (ignore) return;
-      const loaded = {};
-      results.forEach((r) => {
-        if (r.status === 'fulfilled') loaded[r.value.data.id] = r.value.data;
-      });
-      setFetched((prev) => ({ ...prev, ...loaded }));
-      if (results.some((r) => r.status === 'rejected')) {
-        devWarn('Could not load some favorite Pokemon');
-        setFailed(true);
+    Promise.allSettled(idsToFetch.map((id) => pokeapi.get<Pokemon>(`/pokemon/${id}`))).then(
+      (results) => {
+        if (ignore) return;
+        const loaded: Record<number, Pokemon> = {};
+        results.forEach((r) => {
+          if (r.status === 'fulfilled') loaded[r.value.data.id] = r.value.data;
+        });
+        setFetched((prev) => ({ ...prev, ...loaded }));
+        if (results.some((r) => r.status === 'rejected')) {
+          devWarn('Could not load some favorite Pokemon');
+          setFailed(true);
+        }
       }
-    });
+    );
     return () => {
       ignore = true;
     };
@@ -73,14 +84,14 @@ function useFavorites(loadedPokemons) {
 
   const retry = useCallback(() => setRetryToken((t) => t + 1), []);
 
-  const isFavorite = useCallback((id) => ids.includes(id), [ids]);
+  const isFavorite = useCallback((id: number) => ids.includes(id), [ids]);
 
-  const add = useCallback((pokemon) => {
+  const add = useCallback((pokemon: Pokemon) => {
     setIds((prev) => (prev.includes(pokemon.id) ? prev : [...prev, pokemon.id]));
     setFetched((prev) => ({ ...prev, [pokemon.id]: pokemon }));
   }, []);
 
-  const remove = useCallback((pokemon) => {
+  const remove = useCallback((pokemon: Pokemon) => {
     setIds((prev) => prev.filter((id) => id !== pokemon.id));
   }, []);
 
@@ -89,7 +100,7 @@ function useFavorites(loadedPokemons) {
     () =>
       ids
         .map(lookup)
-        .filter(Boolean)
+        .filter((p): p is Pokemon => Boolean(p))
         .sort((a, b) => a.id - b.id),
     [ids, lookup]
   );

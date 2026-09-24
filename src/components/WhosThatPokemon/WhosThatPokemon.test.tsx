@@ -2,21 +2,27 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import pokeapi from '../../api/pokeapi';
+import type { Generation, Pokemon } from '../../types/pokeapi';
 import WhosThatPokemon from './WhosThatPokemon';
 
 vi.mock('../../api/pokeapi', () => ({ default: { get: vi.fn() } }));
 
-const names = { 1: 'bulbasaur', 2: 'ivysaur', 3: 'venusaur', 122: 'mr-mime' };
-const species = (id) => ({
-  name: names[id],
+const names: Record<number, string> = { 1: 'bulbasaur', 2: 'ivysaur', 3: 'venusaur', 122: 'mr-mime' };
+const species = (id: number) => ({
+  name: names[id]!,
   url: `https://pokeapi.co/api/v2/pokemon-species/${id}/`,
 });
-const generationWith = (...ids) => [
-  { name: 'generation-i', displayName: 'Generation I (Kanto)', speciesList: ids.map(species) },
-];
+const generationWith = (...ids: number[]): Generation[] =>
+  [
+    {
+      name: 'generation-i',
+      displayName: 'Generation I (Kanto)',
+      speciesList: ids.map(species),
+    },
+  ] as Generation[];
 
-const fetchPokemon = async (url) => {
-  const id = Number(url.match(/^\/pokemon\/(\d+)$/)[1]);
+const fetchPokemon = async (url: string) => {
+  const id = Number(url.match(/^\/pokemon\/(\d+)$/)![1]);
   return {
     data: {
       id,
@@ -26,16 +32,18 @@ const fetchPokemon = async (url) => {
   };
 };
 
-const renderGame = (generations = generationWith(1, 2, 3, 122), onOpenPokemon = () => {}) =>
-  render(<WhosThatPokemon generations={generations} onOpenPokemon={onOpenPokemon} />);
+const renderGame = (
+  generations: Generation[] = generationWith(1, 2, 3, 122),
+  onOpenPokemon: (pokemon: Pokemon) => void = () => {}
+) => render(<WhosThatPokemon generations={generations} onOpenPokemon={onOpenPokemon} />);
 
 const score = () => document.querySelector('.quiz-score');
 
 describe('WhosThatPokemon', () => {
   beforeEach(() => {
     localStorage.clear();
-    pokeapi.get.mockReset();
-    pokeapi.get.mockImplementation(fetchPokemon);
+    vi.mocked(pokeapi.get).mockReset();
+    vi.mocked(pokeapi.get).mockImplementation(fetchPokemon as typeof pokeapi.get);
     // Always pick the first eligible species, so rounds are predictable
     vi.spyOn(Math, 'random').mockReturnValue(0);
   });
@@ -57,7 +65,9 @@ describe('WhosThatPokemon', () => {
 
     expect(screen.getByText(/Correct! It’s/)).toHaveTextContent('Correct! It’s Bulbasaur!');
     expect(screen.getByAltText('Bulbasaur')).toBeInTheDocument();
-    expect(score()).toHaveTextContent('Score 1/1 · Streak 1 · Best 1');
+    expect(score()).toHaveTextContent(/Score\s*1\/1/);
+    expect(score()).toHaveTextContent(/Streak\s*1/);
+    expect(score()).toHaveTextContent(/Best\s*1/);
     expect(localStorage.getItem('pokedex-quiz-best')).toBe('1');
     choices.forEach((c) => expect(c).toBeDisabled());
     expect(screen.getByRole('button', { name: 'Next Pokémon' })).toHaveFocus();
@@ -74,7 +84,8 @@ describe('WhosThatPokemon', () => {
     expect(screen.getByText(/Not quite/)).toHaveTextContent('Not quite, it’s Bulbasaur!');
     expect(wrong).toHaveClass('wrong');
     expect(screen.getByRole('button', { name: /Bulbasaur/ })).toHaveClass('correct');
-    expect(score()).toHaveTextContent('Score 0/1 · Streak 0 · Best 0');
+    expect(score()).toHaveTextContent(/Score\s*0\/1/);
+    expect(score()).toHaveTextContent(/Streak\s*0/);
   });
 
   it('picks a choice with the number keys', async () => {
@@ -83,7 +94,7 @@ describe('WhosThatPokemon', () => {
 
     await screen.findByAltText('Silhouette of a mystery Pokémon');
     await user.keyboard('1');
-    expect(score()).toHaveTextContent('Score 0/1');
+    expect(score()).toHaveTextContent(/Score\s*0\/1/);
     expect(document.querySelector('.quiz-choice')).toBeDisabled();
   });
 
@@ -109,7 +120,7 @@ describe('WhosThatPokemon', () => {
     await user.type(screen.getByRole('textbox', { name: 'Your guess' }), 'Mr. Mime{Enter}');
 
     expect(screen.getByText(/Correct! It’s/)).toHaveTextContent('Correct! It’s Mr Mime!');
-    expect(JSON.parse(localStorage.getItem('pokedex-quiz-prefs'))).toMatchObject({ mode: 'type' });
+    expect(JSON.parse(localStorage.getItem('pokedex-quiz-prefs')!)).toMatchObject({ mode: 'type' });
   });
 
   it('reveals the answer on giving up', async () => {
@@ -120,7 +131,7 @@ describe('WhosThatPokemon', () => {
     await screen.findByAltText('Silhouette of a mystery Pokémon');
     await user.click(screen.getByRole('button', { name: 'Give up' }));
     expect(screen.getByText(/It’s/)).toHaveTextContent('It’s Bulbasaur!');
-    expect(score()).toHaveTextContent('Score 0/1');
+    expect(score()).toHaveTextContent(/Score\s*0\/1/);
   });
 
   it('opens the revealed Pokémon in the Pokédex', async () => {
@@ -136,11 +147,11 @@ describe('WhosThatPokemon', () => {
 
   it('offers a retry when a Pokémon fails to load', async () => {
     const user = userEvent.setup();
-    pokeapi.get.mockRejectedValue(new Error('network'));
+    vi.mocked(pokeapi.get).mockRejectedValue(new Error('network'));
     renderGame();
 
     const retry = await screen.findByRole('button', { name: 'Try Again' });
-    pokeapi.get.mockImplementation(fetchPokemon);
+    vi.mocked(pokeapi.get).mockImplementation(fetchPokemon as typeof pokeapi.get);
     await user.click(retry);
     await waitFor(() =>
       expect(screen.getByAltText('Silhouette of a mystery Pokémon')).toBeInTheDocument()

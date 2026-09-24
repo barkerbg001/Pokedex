@@ -1,12 +1,23 @@
 import { FiGrid, FiLayers, FiStar, FiHelpCircle, FiSettings } from 'react-icons/fi';
+import type { AppView, Generation } from '../../types/pokeapi';
 import './BottomNav.css';
 
 // "generation-iv" -> "Gen IV"
-function getShortGenerationLabel(generation) {
+function getShortGenerationLabel(generation: Generation | undefined) {
   if (!generation) return 'Generation';
   const numeral = generation.name.split('-')[1];
   return numeral ? `Gen ${numeral.toUpperCase()}` : generation.displayName;
 }
+
+type Props = {
+  currentGeneration: Generation | undefined;
+  view: AppView;
+  onBrowse: () => void;
+  onOpenGenerations: () => void;
+  onSelectFavorites: () => void;
+  onSelectQuiz: () => void;
+  onSelectSettings: () => void;
+};
 
 // Mobile-only replacement for the sidebar Menu (hidden on desktop via CSS)
 function BottomNav({
@@ -17,7 +28,7 @@ function BottomNav({
   onSelectFavorites,
   onSelectQuiz,
   onSelectSettings,
-}) {
+}: Props) {
   return (
     <nav className="bottom-nav" aria-label="Main">
       <button

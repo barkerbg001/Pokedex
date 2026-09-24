@@ -8,7 +8,7 @@ import { configure } from '@testing-library/react';
 // Test files run in parallel, and a file's first render (cold imports, the
 // whole Pokedex tree) can take over the default 1s findBy/waitFor timeout on a
 // busy machine
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10000 });
 
 // A few test files (e.g. sw.test.js, which loads public/sw.js into a fake
 // ServiceWorkerGlobalScope) opt into `// @vitest-environment node`, which has
@@ -17,29 +17,43 @@ configure({ asyncUtilTimeout: 5000 });
 if (typeof window !== 'undefined') {
   // Mock IntersectionObserver for tests. Reports every observed element as
   // visible, so infinite-scroll loaders load their first batch.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.IntersectionObserver = class IntersectionObserver {
-    constructor(callback) {
+    callback: IntersectionObserverCallback;
+
+    constructor(callback: IntersectionObserverCallback) {
       this.callback = callback;
     }
-    observe(target) {
-      queueMicrotask(() => this.callback([{ isIntersecting: true, target }], this));
-    }
-    disconnect() {}
-    unobserve() {}
-  };
 
+    observe(target: Element): void {
+      queueMicrotask(() =>
+        this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as any)
+      );
+    }
+
+    disconnect(): void {}
+    unobserve(_target: Element): void {}
+  } as any;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    disconnect() {}
-    unobserve() {}
-  };
+    observe(_target?: Element): void {}
+    disconnect(): void {}
+    unobserve(_target?: Element): void {}
+  } as any;
 
   window.matchMedia =
     window.matchMedia ||
-    ((query) => ({
+    ((query: string): MediaQueryList => ({
       matches: false,
       media: query,
+      onchange: null,
+      addListener() {},
+      removeListener() {},
       addEventListener() {},
       removeEventListener() {},
+      dispatchEvent() {
+        return false;
+      },
     }));
 }

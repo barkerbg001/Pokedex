@@ -1,9 +1,19 @@
+import type { IconType } from 'react-icons';
 import { FiHelpCircle, FiSettings, FiStar } from 'react-icons/fi';
 import GenerationList from '../GenerationList/GenerationList';
+import type { AppView, Generation } from '../../types/pokeapi';
 import './Menu.css';
 
+type MenuItemProps = {
+  icon: IconType;
+  label: string;
+  count?: number;
+  active: boolean;
+  onClick: () => void;
+};
+
 // A sidebar link styled like a generation row, with its icon in the numeral's place
-function MenuItem({ icon: Icon, label, count, active, onClick }) {
+function MenuItem({ icon: Icon, label, count, active, onClick }: MenuItemProps) {
   return (
     <button
       type="button"
@@ -15,10 +25,21 @@ function MenuItem({ icon: Icon, label, count, active, onClick }) {
         <Icon />
       </span>
       <span className="menu-item-label">{label}</span>
-      {count > 0 && <span className="menu-item-count">{count}</span>}
+      {count !== undefined && count > 0 && <span className="menu-item-count">{count}</span>}
     </button>
   );
 }
+
+type Props = {
+  generations: Generation[];
+  selectedGeneration: string | null;
+  onSelectGeneration: (name: string) => void;
+  view: AppView;
+  favoritesCount: number;
+  onSelectFavorites: () => void;
+  onSelectQuiz: () => void;
+  onSelectSettings: () => void;
+};
 
 function Menu({
   generations,
@@ -29,7 +50,7 @@ function Menu({
   onSelectFavorites,
   onSelectQuiz,
   onSelectSettings,
-}) {
+}: Props) {
   return (
     <nav className="menu" aria-label="Main">
       <div className="menu-scroll">

@@ -3,9 +3,10 @@
 }
 
 @media (max-width: 768px) {
-  /* Hide while typing a search, so it can't ride up with the on-screen
-     keyboard and cover results (browsers that resize the layout viewport) */
-  body:has(.search-input:focus) .bottom-nav {
+  /* Hide while typing a search or quiz guess, so it can't ride up with the
+     on-screen keyboard and cover the input (browsers that resize the layout) */
+  body:has(.search-input:focus) .bottom-nav,
+  body:has(.quiz-guess-input:focus) .bottom-nav {
     display: none;
   }
 

@@ -1,12 +1,18 @@
 import { useEffect } from 'react';
+import type { ToastData } from '../../types/pokeapi';
 import './Toast.css';
 
 const DEFAULT_DURATION_MS = 5000;
 
+type Props = {
+  toast: ToastData | null;
+  onDismiss: () => void;
+};
+
 // A brief message above the bottom of the screen, with an optional action
 // (e.g. Undo). Pass a new `toast.id` to show another message; `toast.duration`
 // overrides how long it stays up (e.g. for a message that's easy to miss).
-function Toast({ toast, onDismiss }) {
+function Toast({ toast, onDismiss }: Props) {
   useEffect(() => {
     if (!toast) return;
     const timeout = setTimeout(onDismiss, toast.duration ?? DEFAULT_DURATION_MS);
@@ -23,7 +29,7 @@ function Toast({ toast, onDismiss }) {
               type="button"
               className="toast-action"
               onClick={() => {
-                toast.action.onClick();
+                toast.action!.onClick();
                 onDismiss();
               }}
             >

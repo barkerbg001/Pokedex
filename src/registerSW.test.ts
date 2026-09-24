@@ -1,11 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { registerSW, applyUpdate } from './registerSW';
 
+type EventHandler = (event?: unknown) => void;
+
+type FakeTarget = {
+  addEventListener: (type: string, handler: EventHandler) => void;
+  dispatch: (type: string, event?: unknown) => void;
+  state?: string;
+};
+
 // A minimal fake EventTarget, just enough for registerSW's own
 // addEventListener/dispatch usage on navigator.serviceWorker, a registration
 // and an installing worker
-function fakeEventTarget() {
-  const listeners = {};
+function fakeEventTarget(): FakeTarget {
+  const listeners: Record<string, EventHandler[]> = {};
   return {
     addEventListener: (type, handler) => {
       (listeners[type] ??= []).push(handler);
@@ -17,11 +25,11 @@ function fakeEventTarget() {
 }
 
 describe('registerSW', () => {
-  let originalServiceWorker;
-  let reloadSpy;
+  let originalServiceWorker: ServiceWorkerContainer | undefined;
+  let reloadSpy: ReturnType<typeof vi.fn>;
 
-  let originalLocation;
-  let originalReadyState;
+  let originalLocation: Location;
+  let originalReadyState: DocumentReadyState;
 
   beforeEach(() => {
     originalServiceWorker = navigator.serviceWorker;
@@ -41,8 +49,13 @@ describe('registerSW', () => {
   afterEach(() => {
     // jsdom has no native serviceWorker property to restore, so put things
     // back exactly as found (present or absent) rather than always defining one
-    if (originalServiceWorker === undefined) delete navigator.serviceWorker;
-    else {
+    if (originalServiceWorker === undefined) {
+      Object.defineProperty(navigator, 'serviceWorker', {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+    } else {
       Object.defineProperty(navigator, 'serviceWorker', {
         value: originalServiceWorker,
         configurable: true,
@@ -56,7 +69,10 @@ describe('registerSW', () => {
     });
   });
 
-  function fakeServiceWorkerContainer(registration, { controller = null } = {}) {
+  function fakeServiceWorkerContainer(
+    registration: FakeTarget & { waiting: unknown; installing?: FakeTarget },
+    { controller = null }: { controller?: unknown } = {}
+  ) {
     const container = {
       ...fakeEventTarget(),
       controller,
@@ -111,7 +127,7 @@ describe('registerSW', () => {
   it('reports a new worker once it finishes installing', async () => {
     const installing = fakeEventTarget();
     installing.state = 'installing';
-    const registration = { ...fakeEventTarget(), waiting: null, installing };
+    const registration = { ...fakeEventTarget(), waiting: null as FakeTarget | null, installing };
     fakeServiceWorkerContainer(registration);
     const onUpdateAvailable = vi.fn();
 
@@ -199,7 +215,7 @@ describe('registerSW', () => {
 describe('applyUpdate', () => {
   it('asks the waiting worker to skip waiting', () => {
     const worker = { postMessage: vi.fn() };
-    applyUpdate(worker);
+    applyUpdate(worker as unknown as ServiceWorker);
     expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
   });
 });

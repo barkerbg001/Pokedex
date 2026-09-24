@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react';
 import Pokedex from '../Pokedex/Pokedex';
 import useInstallPrompt from '../../hooks/useInstallPrompt';
 import useServiceWorkerUpdate from '../../hooks/useServiceWorkerUpdate';
+import type { ThemePreference, AppliedTheme } from '../../types/pokeapi';
 
 function App() {
   // The user's chosen preference: 'light', 'dark', or 'system'
-  const [themePreference, setThemePreference] = useState(() => {
-    return localStorage.getItem('pokedex-theme') || 'system';
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
+    const saved = localStorage.getItem('pokedex-theme');
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+    return 'system';
   });
   const install = useInstallPrompt();
   const swUpdate = useServiceWorkerUpdate();
@@ -17,13 +20,13 @@ function App() {
 
   useEffect(() => {
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => setSystemPrefersDark(e.matches);
+    const handleChange = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
     mql.addEventListener('change', handleChange);
     return () => mql.removeEventListener('change', handleChange);
   }, []);
 
   // The actual light/dark theme in effect, resolving 'system' against the OS preference
-  const appliedTheme =
+  const appliedTheme: AppliedTheme =
     themePreference === 'system' ? (systemPrefersDark ? 'dark' : 'light') : themePreference;
 
   useEffect(() => {

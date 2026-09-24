@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, type FocusEvent, type KeyboardEvent } from 'react';
 
 // Roving-tabindex keyboard navigation for a CSS grid of items.
 //
@@ -7,34 +7,38 @@ import { useState, useRef, useCallback } from 'react';
 // active cell is in the Tab order, and the arrow keys, Home and End move
 // between cells. The column count is read from the rendered layout, so this
 // works with `repeat(auto-fill, ...)` grids at any width.
-function useGridNavigation(itemCount) {
-  const containerRef = useRef(null);
+function useGridNavigation(itemCount: number) {
+  const containerRef = useRef<HTMLElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const current = Math.min(activeIndex, Math.max(itemCount - 1, 0));
 
-  const getTabIndex = useCallback((index) => (index === current ? 0 : -1), [current]);
+  const getTabIndex = useCallback((index: number) => (index === current ? 0 : -1), [current]);
 
-  const focusTarget = (cell) =>
-    cell.hasAttribute('data-grid-focus') ? cell : cell.querySelector('[data-grid-focus]');
+  const focusTarget = (cell: Element): HTMLElement | null => {
+    const el = cell.hasAttribute('data-grid-focus') ? cell : cell.querySelector('[data-grid-focus]');
+    return el instanceof HTMLElement ? el : null;
+  };
 
-  const onFocus = useCallback((e) => {
-    const cells = Array.from(containerRef.current?.children || []);
-    const index = cells.findIndex((cell) => cell.contains(e.target));
+  const onFocus = useCallback((e: FocusEvent) => {
+    const cells = Array.from(containerRef.current?.children ?? []) as HTMLElement[];
+    const index = cells.findIndex((cell) => cell.contains(e.target as Node));
     if (index !== -1) setActiveIndex(index);
   }, []);
 
-  const onKeyDown = useCallback((e) => {
-    const cells = Array.from(containerRef.current?.children || []);
-    const index = cells.findIndex((cell) => cell.contains(e.target));
+  const onKeyDown = useCallback((e: KeyboardEvent) => {
+    const cells = Array.from(containerRef.current?.children ?? []) as HTMLElement[];
+    const index = cells.findIndex((cell) => cell.contains(e.target as Node));
     if (index === -1) return;
 
-    const firstRowTop = cells[0].offsetTop;
+    const first = cells[0];
+    if (!first) return;
+    const firstRowTop = first.offsetTop;
     const columns = Math.max(1, cells.filter((cell) => cell.offsetTop === firstRowTop).length);
     const last = cells.length - 1;
     const row = Math.floor(index / columns);
     const lastRow = Math.floor(last / columns);
 
-    let next;
+    let next: number;
     switch (e.key) {
       case 'ArrowRight':
         next = Math.min(index + 1, last);
@@ -61,7 +65,8 @@ function useGridNavigation(itemCount) {
 
     e.preventDefault();
     setActiveIndex(next);
-    focusTarget(cells[next])?.focus();
+    const nextCell = cells[next];
+    if (nextCell) focusTarget(nextCell)?.focus();
   }, []);
 
   return { containerRef, getTabIndex, onFocus, onKeyDown };

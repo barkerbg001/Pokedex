@@ -1,14 +1,23 @@
 import { FaStar, FaRegStar } from 'react-icons/fa';
+import type { RefObject } from 'react';
 import useGridNavigation from '../../hooks/useGridNavigation';
+import type { Pokemon } from '../../types/pokeapi';
+
+type Props = {
+  pokemons: Pokemon[];
+  isFavorite: (id: number) => boolean;
+  onToggleFavorite: (pokemon: Pokemon) => void;
+  onOpen: (pokemon: Pokemon) => void;
+};
 
 // Grid of Pokemon cards with arrow-key navigation. Each card opens the Pokemon's
 // details, and has a star button to add or remove it from favorites.
-function PokemonGrid({ pokemons, isFavorite, onToggleFavorite, onOpen }) {
+function PokemonGrid({ pokemons, isFavorite, onToggleFavorite, onOpen }: Props) {
   const gridNav = useGridNavigation(pokemons.length);
 
   return (
     <div
-      ref={gridNav.containerRef}
+      ref={gridNav.containerRef as RefObject<HTMLDivElement | null>}
       className="pokemon-grid"
       onFocus={gridNav.onFocus}
       onKeyDown={gridNav.onKeyDown}
@@ -30,7 +39,7 @@ function PokemonGrid({ pokemons, isFavorite, onToggleFavorite, onOpen }) {
             <div className="card-top">
               {/* crossOrigin: a CORS response, unlike an opaque one, can be cached for offline use (see sw.js) */}
               <img
-                src={pokemon.sprites.front_default}
+                src={pokemon.sprites.front_default ?? undefined}
                 crossOrigin="anonymous"
                 alt=""
                 width={100}

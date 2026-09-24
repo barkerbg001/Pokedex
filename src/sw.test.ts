@@ -20,10 +20,37 @@ const swSource = readFileSync(swPath, 'utf-8')
 
 const ORIGIN = 'https://pokedex.test';
 
+type FakeRequestOpts = {
+  method?: string;
+  url?: string;
+  mode?: string;
+  destination?: string;
+};
+
+type FakeRequest = {
+  method: string;
+  url: string;
+  mode: string;
+  destination: string;
+  clone: () => FakeRequest;
+};
+
+type FakeResponse = {
+  ok: boolean;
+  status: number;
+  type: string;
+  clone: () => FakeResponse;
+};
+
 // A plain object with just the Request properties/methods sw.js actually
 // touches - the real Fetch API's Request forbids constructing one with
 // mode: 'navigate' at all, which sw.js needs to branch on
-function fakeRequest({ method = 'GET', url, mode = 'cors', destination = '' } = {}) {
+function fakeRequest({
+  method = 'GET',
+  url = '',
+  mode = 'cors',
+  destination = '',
+}: FakeRequestOpts = {}): FakeRequest {
   return {
     method,
     url,
@@ -35,7 +62,11 @@ function fakeRequest({ method = 'GET', url, mode = 'cors', destination = '' } = 
   };
 }
 
-function fakeResponse({ ok = true, status = 200, type = 'basic' } = {}) {
+function fakeResponse({
+  ok = true,
+  status = 200,
+  type = 'basic',
+}: { ok?: boolean; status?: number; type?: string } = {}): FakeResponse {
   return {
     ok,
     status,
@@ -46,21 +77,23 @@ function fakeResponse({ ok = true, status = 200, type = 'basic' } = {}) {
   };
 }
 
+type FetchImpl = (req: FakeRequest) => Promise<FakeResponse>;
+
 // A minimal in-memory CacheStorage: enough of the real interface (open,
 // match/put/delete/keys/addAll on a Cache, and match/keys/delete on the
 // top-level CacheStorage) for sw.js's own logic to run against
-function createFakeCaches(fetchImpl) {
-  const named = new Map();
+function createFakeCaches(fetchImpl: FetchImpl) {
+  const named = new Map<string, ReturnType<typeof makeCache>>();
 
-  function keyOf(reqOrUrl) {
+  function keyOf(reqOrUrl: string | FakeRequest) {
     return typeof reqOrUrl === 'string' ? new URL(reqOrUrl, ORIGIN).href : reqOrUrl.url;
   }
 
   function makeCache() {
-    const store = new Map();
+    const store = new Map<string, FakeResponse>();
     return {
-      match: async (reqOrUrl) => store.get(keyOf(reqOrUrl)),
-      put: async (reqOrUrl, response) => {
+      match: async (reqOrUrl: string | FakeRequest) => store.get(keyOf(reqOrUrl)),
+      put: async (reqOrUrl: string | FakeRequest, response: FakeResponse) => {
         const request = typeof reqOrUrl === 'string' ? fakeRequest({ url: reqOrUrl }) : reqOrUrl;
         if (request.method !== 'GET') {
           throw new TypeError(
@@ -69,9 +102,9 @@ function createFakeCaches(fetchImpl) {
         }
         store.set(keyOf(reqOrUrl), response);
       },
-      delete: async (reqOrUrl) => store.delete(keyOf(reqOrUrl)),
+      delete: async (reqOrUrl: string | FakeRequest) => store.delete(keyOf(reqOrUrl)),
       keys: async () => [...store.keys()].map((url) => fakeRequest({ url })),
-      addAll: async (urls) => {
+      addAll: async (urls: string[]) => {
         await Promise.all(
           urls.map(async (url) => store.set(keyOf(url), await fetchImpl(fakeRequest({ url }))))
         );
@@ -81,30 +114,40 @@ function createFakeCaches(fetchImpl) {
   }
 
   return {
-    open: async (name) => {
+    open: async (name: string) => {
       if (!named.has(name)) named.set(name, makeCache());
-      return named.get(name);
+      return named.get(name)!;
     },
-    match: async (reqOrUrl, opts) => {
+    match: async (reqOrUrl: string | FakeRequest, _opts?: unknown) => {
       for (const cache of named.values()) {
-        const hit = await cache.match(reqOrUrl, opts);
+        const hit = await cache.match(reqOrUrl);
         if (hit) return hit;
       }
       return undefined;
     },
     keys: async () => [...named.keys()],
-    delete: async (name) => named.delete(name),
+    delete: async (name: string) => named.delete(name),
     _named: named,
   };
 }
 
-function loadSW({ fetchImpl = vi.fn(async () => fakeResponse()) } = {}) {
-  const listeners = {};
+type ListenerMap = Record<string, Array<(event: FireEvent) => void>>;
+
+type FireEvent = {
+  waitUntil: (p: Promise<unknown>) => number;
+  respondWith: (p: Promise<unknown> | unknown) => void;
+  response?: Promise<unknown> | unknown;
+  request?: FakeRequest;
+  data?: unknown;
+};
+
+function loadSW({ fetchImpl = vi.fn(async () => fakeResponse()) }: { fetchImpl?: FetchImpl } = {}) {
+  const listeners: ListenerMap = {};
   const caches = createFakeCaches(fetchImpl);
   const skipWaiting = vi.fn();
   const claim = vi.fn(async () => {});
   const selfObj = {
-    addEventListener: (type, handler) => {
+    addEventListener: (type: string, handler: (event: FireEvent) => void) => {
       (listeners[type] ??= []).push(handler);
     },
     skipWaiting,
@@ -119,9 +162,9 @@ function loadSW({ fetchImpl = vi.fn(async () => fakeResponse()) } = {}) {
 
 // Fires every handler registered for `type`, collecting waitUntil() promises
 // and whatever respondWith() was (eventually) given
-function fire(listeners, type, event = {}) {
-  const waits = [];
-  const full = {
+function fire(listeners: ListenerMap, type: string, event: Partial<FireEvent> = {}) {
+  const waits: Promise<unknown>[] = [];
+  const full: FireEvent = {
     ...event,
     waitUntil: (p) => waits.push(p),
     respondWith: (p) => {
@@ -205,14 +248,14 @@ describe('sw.js fetch handler', () => {
     const { event } = fire(listeners, 'fetch', {
       request: fakeRequest({ method: 'GET', url: `${ORIGIN}/assets/other.js` }),
     });
-    const response = await event.response;
+    const response = (await event.response) as FakeResponse;
 
     expect(response.status).toBe(200);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it('answers a navigation with the cached shell regardless of query string, without hitting the network', async () => {
-    const fetchImpl = vi.fn();
+    const fetchImpl = vi.fn(async () => fakeResponse());
     const { listeners, caches } = loadSW({ fetchImpl });
     const cache = await caches.open('pokedex-test');
     const shellResponse = fakeResponse({ status: 200 });

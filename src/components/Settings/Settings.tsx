@@ -1,13 +1,26 @@
+import type { IconType } from 'react-icons';
 import { FiSun, FiMoon, FiMonitor, FiDownload, FiShare } from 'react-icons/fi';
+import type {
+  ThemePreference,
+  AppliedTheme,
+  InstallPromptState,
+} from '../../types/pokeapi';
 import './Settings.css';
 
-const THEME_OPTIONS = [
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: IconType }[] = [
   { value: 'light', label: 'Light', icon: FiSun },
   { value: 'dark', label: 'Dark', icon: FiMoon },
   { value: 'system', label: 'System', icon: FiMonitor },
 ];
 
-function Settings({ themePreference, appliedTheme, onSetTheme, install }) {
+type Props = {
+  themePreference: ThemePreference;
+  appliedTheme: AppliedTheme;
+  onSetTheme: (theme: ThemePreference) => void;
+  install?: InstallPromptState;
+};
+
+function Settings({ themePreference, appliedTheme, onSetTheme, install }: Props) {
   return (
     <div className="settings-page">
       <h2 className="settings-title">Settings</h2>

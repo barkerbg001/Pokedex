@@ -4,12 +4,14 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import tseslint from 'typescript-eslint';
 
-export default [
+export default tseslint.config(
   { ignores: ['build/**', 'dist/**', 'node_modules/**', 'coverage/**', 'public/sw.js'] },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['**/*.js', '**/*.jsx'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       react,
       'react-hooks': reactHooks,
@@ -39,11 +41,23 @@ export default [
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react-refresh/only-export-components': 'warn',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-unused-vars': 'off',
+      // Allow intentional structural typing on PokéAPI resources
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
   {
-    files: ['**/*.test.js', 'src/setupTests.js', 'vite.config.js', 'vitest.config.js'],
+    files: [
+      '**/*.{test,spec}.{js,ts,tsx}',
+      'src/setupTests.ts',
+      'vite.config.ts',
+      'vitest.config.ts',
+    ],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -51,5 +65,5 @@ export default [
       },
     },
   },
-  eslintConfigPrettier,
-];
+  eslintConfigPrettier
+);

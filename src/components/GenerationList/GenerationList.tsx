@@ -1,13 +1,20 @@
+import type { Generation } from '../../types/pokeapi';
 import './GenerationList.css';
 
 // "generation-iv" -> "IV"
-function getNumeral(generation) {
+function getNumeral(generation: Generation) {
   return generation.name.split('-')[1]?.toUpperCase() || null;
 }
 
+type Props = {
+  generations: Generation[];
+  selectedGeneration: string | null;
+  onSelectGeneration: (name: string) => void;
+};
+
 // Each row is "[IV] Sinnoh  107": a compact form that fits on one line, with
 // the full "Generation IV (Sinnoh)" name as its accessible name
-function GenerationList({ generations, selectedGeneration, onSelectGeneration }) {
+function GenerationList({ generations, selectedGeneration, onSelectGeneration }: Props) {
   return (
     <ul className="generation-list">
       {generations.map((gen) => {

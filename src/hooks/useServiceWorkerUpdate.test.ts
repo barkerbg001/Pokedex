@@ -10,8 +10,8 @@ vi.mock('../registerSW', () => ({
 
 describe('useServiceWorkerUpdate', () => {
   beforeEach(() => {
-    registerSW.mockReset();
-    applyUpdate.mockReset();
+    vi.mocked(registerSW).mockReset();
+    vi.mocked(applyUpdate).mockReset();
   });
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -30,11 +30,11 @@ describe('useServiceWorkerUpdate', () => {
     const { result } = renderHook(() => useServiceWorkerUpdate());
 
     expect(registerSW).toHaveBeenCalledTimes(1);
-    const { onUpdateAvailable } = registerSW.mock.calls[0][0];
+    const { onUpdateAvailable } = vi.mocked(registerSW).mock.calls[0]![0]!;
     expect(result.current.updateAvailable).toBe(false);
 
-    const waitingWorker = { postMessage: vi.fn() };
-    act(() => onUpdateAvailable(waitingWorker));
+    const waitingWorker = { postMessage: vi.fn() } as unknown as ServiceWorker;
+    act(() => onUpdateAvailable?.(waitingWorker));
     expect(result.current.updateAvailable).toBe(true);
 
     result.current.reload();

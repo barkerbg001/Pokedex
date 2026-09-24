@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent, type ChangeEvent } from 'react';
 import { FaRegStar } from 'react-icons/fa';
 import { FiFilter, FiX } from 'react-icons/fi';
 import './Pokedex.css';
@@ -18,59 +18,110 @@ import useOnlineStatus from '../../hooks/useOnlineStatus';
 import useHistoryLocation, { buildUrl } from '../../hooks/useHistoryLocation';
 import { devWarn } from '../../logger';
 import { vibrate } from '../../haptics';
+import type {
+  Pokemon,
+  PokemonSpecies,
+  SpeciesRef,
+  Generation,
+  AppView,
+  AppLocation,
+  SheetKind,
+  NamedAPIResource,
+  ToastData,
+  ToastAction,
+  ThemePreference,
+  AppliedTheme,
+  InstallPromptState,
+  ServiceWorkerUpdateState,
+} from '../../types/pokeapi';
+
+type GenerationCacheEntry = {
+  pokemons: Pokemon[];
+  genOffset: number;
+  hasMore: boolean;
+};
+
+type NavigateOptions = {
+  replace?: boolean;
+  keepSheet?: boolean;
+};
+
+/** Raw /generation/{id} payload (includes localized names). */
+type GenerationApiDetail = {
+  id: number;
+  name: string;
+  main_region: NamedAPIResource | null;
+  pokemon_species: NamedAPIResource[];
+  names: Array<{ name: string; language: NamedAPIResource }>;
+};
+
+type Props = {
+  themePreference: ThemePreference;
+  appliedTheme: AppliedTheme;
+  onSetTheme: (theme: ThemePreference) => void;
+  install?: InstallPromptState;
+  swUpdate?: ServiceWorkerUpdateState;
+};
 
 // Merge two Pokemon arrays, keeping the newest entry for any duplicate id
-function mergeUniqueById(prev, incoming) {
+function mergeUniqueById(prev: Pokemon[], incoming: Pokemon[]) {
   const map = new Map(prev.map((p) => [p.id, p]));
   incoming.forEach((p) => map.set(p.id, p));
   return Array.from(map.values());
 }
 
-function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate }) {
+function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate }: Props) {
   // Where the user is (screen, generation, open Pokémon, open sheet) lives in
   // browser history, so back/forward, reloads and shared links work; these
   // states mirror the current history entry (see applyLocation below)
-  const handleLocationChangeRef = useRef(null);
-  const appHistory = useHistoryLocation((location) => handleLocationChangeRef.current(location));
+  const handleLocationChangeRef = useRef<
+    ((location: AppLocation, options?: NavigateOptions) => void) | null
+  >(null);
+  const appHistory = useHistoryLocation((location: AppLocation) =>
+    handleLocationChangeRef.current?.(location)
+  );
   // Which screen is showing: 'browse' (a generation), 'favorites', 'quiz' or
   // 'settings'
-  const [view, setView] = useState(appHistory.initial.view);
+  const [view, setView] = useState<AppView>(appHistory.initial.view as AppView);
   // The open detail sheet's Pokémon: its name (from the URL) and, once found or
   // fetched, its data
-  const [detailName, setDetailName] = useState(appHistory.initial.pokemon);
-  const [detailPokemon, setDetailPokemon] = useState(null);
+  const [detailName, setDetailName] = useState<string | null>(appHistory.initial.pokemon);
+  const [detailPokemon, setDetailPokemon] = useState<Pokemon | null>(null);
   // The open sheet, if any: 'filter' or 'generations'
-  const [sheet, setSheet] = useState(null);
+  const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [pokemons, setPokemons] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [generations, setGenerations] = useState([]);
-  const [generationsError, setGenerationsError] = useState(null);
-  const [selectedGeneration, setSelectedGeneration] = useState(null);
+  const [pokemons, setPokemons] = useState<Pokemon[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [types, setTypes] = useState<NamedAPIResource[]>([]);
+  const [generations, setGenerations] = useState<Generation[]>([]);
+  const [generationsError, setGenerationsError] = useState<string | null>(null);
+  const [selectedGeneration, setSelectedGeneration] = useState<string | null>(null);
   const [genOffset, setGenOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [batchError, setBatchError] = useState(null);
-  const loader = useRef(null);
-  const searchInputRef = useRef(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const loader = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   // Sits just above the sticky search bar; once it scrolls out of view the bar
   // is stuck to the top and gets a background (see .search-section.stuck)
-  const searchSentinelRef = useRef(null);
+  const searchSentinelRef = useRef<HTMLDivElement | null>(null);
   const [searchStuck, setSearchStuck] = useState(false);
   // Name of the generation whose batch is currently in flight, if any
-  const fetchingGenerationRef = useRef(null);
-  const pokemonsRef = useRef([]);
-  const selectedGenerationRef = useRef(null);
-  const generationCacheRef = useRef({});
-  const [allNames, setAllNames] = useState([]);
+  const fetchingGenerationRef = useRef<string | null>(null);
+  const pokemonsRef = useRef<Pokemon[]>([]);
+  const selectedGenerationRef = useRef<string | null>(null);
+  const generationCacheRef = useRef<Record<string, GenerationCacheEntry>>({});
+  const [allNames, setAllNames] = useState<NamedAPIResource[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const favorites = useFavorites(pokemons);
   const online = useOnlineStatus();
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<ToastData | null>(null);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  const showToast = (message, action, { duration } = {}) =>
-    setToast({ id: Date.now(), message, action, duration });
+  const showToast = (
+    message: string,
+    action?: ToastAction,
+    { duration }: { duration?: number } = {}
+  ) => setToast({ id: Date.now(), message, action, duration });
 
   // Tell the user once a new version has installed and is ready to switch to.
   // Longer-lived than a typical toast: easy to miss, and (unlike "Added to
@@ -87,7 +138,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swUpdate?.updateAvailable]);
 
-  const toggleFavorite = (pokemon) => {
+  const toggleFavorite = (pokemon: Pokemon) => {
     vibrate();
     if (favorites.isFavorite(pokemon.id)) {
       favorites.remove(pokemon);
@@ -103,16 +154,16 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
 
   // Share a link that opens this Pokémon (see useHistoryLocation), using the
   // system share sheet where available and copying the link otherwise
-  const sharePokemon = async (pokemon) => {
+  const sharePokemon = async (pokemon: Pokemon) => {
     const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
     const url = `${window.location.origin}${buildUrl({ view: 'browse', pokemon: pokemon.name })}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: `${name} · Pokédex`, text: `${name} in the Pokédex`, url });
         return;
-      } catch (error) {
+      } catch (error: unknown) {
         // Cancelled by the user; anything else falls back to copying
-        if (error.name === 'AbortError') return;
+        if (error instanceof Error && error.name === 'AbortError') return;
       }
     }
     try {
@@ -123,7 +174,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
     }
   };
 
-  const toggleTypeFilter = (typeName) => {
+  const toggleTypeFilter = (typeName: string) => {
     setSelectedTypes((prev) =>
       prev.includes(typeName) ? prev.filter((t) => t !== typeName) : [...prev, typeName]
     );
@@ -139,8 +190,10 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   const loadGenerations = useCallback(async () => {
     setGenerationsError(null);
     try {
-      const listRes = await pokeapi.get('/generation?limit=100');
-      const details = await Promise.all(listRes.data.results.map((g) => pokeapi.get(g.url)));
+      const listRes = await pokeapi.get<{ results: NamedAPIResource[] }>('/generation?limit=100');
+      const details = await Promise.all(
+        listRes.data.results.map((g) => pokeapi.get<GenerationApiDetail>(g.url))
+      );
       const list = details
         .map(({ data: gen }) => {
           const englishName = gen.names.find((n) => n.language.name === 'en')?.name || gen.name;
@@ -151,9 +204,9 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
             id: gen.id,
             name: gen.name,
             displayName,
-            region,
+            region: region || '',
             speciesList: gen.pokemon_species.map((s) => ({ name: s.name, url: s.url })),
-          };
+          } satisfies Generation;
         })
         .sort((a, b) => a.id - b.id);
       setGenerations(list);
@@ -193,16 +246,19 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
         return;
       }
 
-      const speciesResults = await Promise.all(batch.map((s) => pokeapi.get(s.url)));
+      const speciesResults = await Promise.all(
+        batch.map((s) => pokeapi.get<PokemonSpecies>(s.url))
+      );
       const pokemonResults = await Promise.all(
         speciesResults.map((r) => {
-          const defaultVariety = r.data.varieties.find((v) => v.is_default) || r.data.varieties[0];
-          return pokeapi.get(defaultVariety.pokemon.url);
+          const varieties = r.data.varieties || [];
+          const defaultVariety = varieties.find((v) => v.is_default) || varieties[0];
+          return pokeapi.get<Pokemon>(defaultVariety!.pokemon.url);
         })
       );
       const fetched = pokemonResults.map((r, i) => ({
         ...r.data,
-        species: speciesResults[i].data,
+        species: speciesResults[i]!.data,
       }));
 
       // The user may have switched generations while this batch was in flight
@@ -226,7 +282,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
 
   // Switch the list to a generation, restoring it from the cache if it was
   // loaded before
-  const showGeneration = (genName) => {
+  const showGeneration = (genName: string | null | undefined) => {
     if (!genName || genName === selectedGeneration) return;
 
     if (selectedGeneration) {
@@ -252,7 +308,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   };
 
   // Make the app match a history entry (on back/forward, or after navigating)
-  const applyLocation = (location, { keepSheet = false } = {}) => {
+  const applyLocation = (location: AppLocation, { keepSheet = false }: NavigateOptions = {}) => {
     setView(location.view);
     const gen = generations.some((g) => g.name === location.gen)
       ? location.gen
@@ -264,9 +320,10 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   };
   handleLocationChangeRef.current = applyLocation;
 
-  const go = (changes, options) => applyLocation(appHistory.navigate(changes, options), options);
+  const go = (changes: Partial<AppLocation>, options?: NavigateOptions) =>
+    applyLocation(appHistory.navigate(changes, options) as AppLocation, options);
 
-  const selectView = (nextView) => {
+  const selectView = (nextView: AppView) => {
     if (nextView === view) {
       // Tapping the current screen again jumps back to the top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -275,17 +332,17 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
     go({ view: nextView, pokemon: null });
   };
 
-  const handleSelectGeneration = (genName) => {
+  const handleSelectGeneration = (genName: string) => {
     if (genName === selectedGeneration && view === 'browse') return;
     go({ view: 'browse', gen: genName, pokemon: null }, { keepSheet: true });
   };
 
-  const openSheet = (name) => go({ sheet: name });
-  const closeSheet = (name) => {
+  const openSheet = (name: SheetKind) => go({ sheet: name });
+  const closeSheet = (name: SheetKind) => {
     if (!appHistory.closeOverlay('sheet', name)) setSheet(null);
   };
 
-  const openPokemon = (pokemon) => {
+  const openPokemon = (pokemon: Pokemon) => {
     setDetailPokemon(pokemon);
     go({ pokemon: pokemon.name });
   };
@@ -295,7 +352,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
 
   // Find the data for the Pokémon in the URL: already loaded, or fetched (for
   // a shared link or a reload)
-  const knownPokemon = [...pokemons, ...favorites.favorites];
+  const knownPokemon = [...pokemons, ...(favorites.favorites as Pokemon[])];
   const knownDetail =
     detailPokemon?.name === detailName
       ? detailPokemon
@@ -304,7 +361,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
     if (!detailName || knownDetail) return;
     let ignore = false;
     pokeapi
-      .get(`/pokemon/${detailName}`)
+      .get<Pokemon>(`/pokemon/${detailName}`)
       .then(({ data }) => {
         if (ignore) return;
         setDetailPokemon(data);
@@ -366,7 +423,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   useEffect(() => {
     async function loadAllNames() {
       try {
-        const res = await pokeapi.get('/pokemon?limit=100000');
+        const res = await pokeapi.get<{ results: NamedAPIResource[] }>('/pokemon?limit=100000');
         setAllNames(res.data.results);
       } catch {
         devWarn('Could not load full Pokemon name index; search limited to loaded results');
@@ -391,10 +448,12 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
 
       setSearchLoading(true);
       try {
-        const results = await Promise.all(missing.map((m) => pokeapi.get(m.url)));
-        const withSpecies = await Promise.all(results.map((r) => pokeapi.get(r.data.species.url)));
+        const results = await Promise.all(missing.map((m) => pokeapi.get<Pokemon>(m.url)));
+        const withSpecies = await Promise.all(
+          results.map((r) => pokeapi.get<PokemonSpecies>((r.data.species as SpeciesRef).url))
+        );
         if (ignore) return;
-        const fetched = results.map((r, i) => ({ ...r.data, species: withSpecies[i].data }));
+        const fetched = results.map((r, i) => ({ ...r.data, species: withSpecies[i]!.data }));
         setPokemons((prev) => mergeUniqueById(prev, fetched));
       } catch {
         if (!ignore) devWarn('Search lookup failed, showing loaded results only');
@@ -414,7 +473,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   useEffect(() => {
     async function loadFilters() {
       try {
-        const typeRes = await pokeapi.get('/type?limit=100');
+        const typeRes = await pokeapi.get<{ results: NamedAPIResource[] }>('/type?limit=100');
         // Drop pseudo-types (stellar, unknown, shadow) that no Pokémon can have
         setTypes(typeRes.data.results.filter((t) => t.name in typeColors));
       } catch {
@@ -431,7 +490,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0]?.isIntersecting) {
           loadGenerationBatch();
         }
       },
@@ -459,13 +518,16 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
       setSearchStuck(false);
       return;
     }
-    const observer = new IntersectionObserver(([entry]) => setSearchStuck(!entry.isIntersecting));
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setSearchStuck(!entry.isIntersecting);
+    });
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [view]);
 
   // Search and type filters apply to both Browse and Favorites
-  const applyFilters = (list) =>
+  const applyFilters = (list: Pokemon[]) =>
     list
       .filter((pokemon) => pokemon.name.includes(searchQuery || ''))
       .filter((pokemon) =>
@@ -474,7 +536,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
           : pokemon.types.some((t) => selectedTypes.includes(t.type.name))
       );
   const filteredPokemons = applyFilters(pokemons);
-  const filteredFavorites = applyFilters(favorites.favorites);
+  const filteredFavorites = applyFilters(favorites.favorites as Pokemon[]);
 
   const hasActiveFilters = selectedTypes.length > 0;
   const currentGeneration = generations.find((g) => g.name === selectedGeneration);
@@ -569,7 +631,7 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
             <form
               role="search"
               className={`search-section ${searchStuck ? 'stuck' : ''}`}
-              onSubmit={(e) => {
+              onSubmit={(e: FormEvent) => {
                 // Results already update as you type; Enter just dismisses the keyboard
                 e.preventDefault();
                 searchInputRef.current?.blur();
@@ -589,7 +651,9 @@ function Pokedex({ themePreference, appliedTheme, onSetTheme, install, swUpdate 
                 aria-label={view === 'favorites' ? 'Search favorites' : 'Search Pokémon by name'}
                 className="search-input"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setSearchQuery(e.target.value.toLowerCase())
+                }
               />
               {searchQuery && (
                 <button

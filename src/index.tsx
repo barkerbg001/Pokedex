@@ -8,6 +8,9 @@ import { sendToVercelAnalytics } from './vitals';
 // not here, so it can be gated to production and report update availability
 
 const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root element #root not found');
+}
 const root = createRoot(container);
 root.render(
   <React.StrictMode>

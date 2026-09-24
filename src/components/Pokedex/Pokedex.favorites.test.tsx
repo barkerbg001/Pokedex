@@ -5,11 +5,11 @@ import Pokedex from './Pokedex';
 
 // Two generations with one Pokemon each, so we can check a favorite from one
 // generation doesn't leak into the other's grid.
-const pokemon = {
+const pokemon: Record<string, { id: number; name: string; types: { type: { name: string } }[] }> = {
   1: { id: 1, name: 'bulbasaur', types: [{ type: { name: 'grass' } }] },
   387: { id: 387, name: 'turtwig', types: [{ type: { name: 'grass' } }] },
 };
-const withSprites = (p) => ({
+const withSprites = (p: (typeof pokemon)[string]) => ({
   ...p,
   sprites: { front_default: `/${p.name}.png` },
   stats: [],
@@ -19,18 +19,21 @@ const withSprites = (p) => ({
 });
 
 vi.mock('../../api/pokeapi', () => {
-  const generations = {
+  const generations: Record<
+    string,
+    { id: number; name: string; species: number; region: string }
+  > = {
     'generation-i': { id: 1, name: 'generation-i', species: 1, region: 'kanto' },
     'generation-iv': { id: 4, name: 'generation-iv', species: 387, region: 'sinnoh' },
   };
-  const get = vi.fn(async (url) => {
+  const get = vi.fn(async (url: string) => {
     if (url.startsWith('/generation?')) {
       return {
         data: { results: Object.keys(generations).map((name) => ({ url: `gen/${name}` })) },
       };
     }
     if (url.startsWith('gen/')) {
-      const g = generations[url.slice(4)];
+      const g = generations[url.slice(4)]!;
       return {
         data: {
           id: g.id,
@@ -47,7 +50,8 @@ vi.mock('../../api/pokeapi', () => {
     }
     const match = url.match(/^\/pokemon\/(\w+)$/);
     if (match) {
-      const found = pokemon[match[1]] || Object.values(pokemon).find((p) => p.name === match[1]);
+      const key = match[1]!;
+      const found = pokemon[key] || Object.values(pokemon).find((p) => p.name === key);
       if (!found) throw new Error('404');
       return { data: withSprites(found) };
     }
@@ -59,7 +63,7 @@ vi.mock('../../api/pokeapi', () => {
 const renderPokedex = () =>
   render(<Pokedex themePreference="light" appliedTheme="light" onSetTheme={() => {}} />);
 
-const grid = () => document.querySelector('.pokemon-grid');
+const grid = () => document.querySelector('.pokemon-grid') as HTMLElement;
 
 describe('favorites', () => {
   beforeEach(() => {
@@ -72,16 +76,22 @@ describe('favorites', () => {
     const user = userEvent.setup();
     renderPokedex();
 
-    const star = await screen.findByRole('button', { name: 'Favorite bulbasaur' });
+    // Under full-suite parallel load, the first cold mount can exceed the
+    // default 5s asyncUtilTimeout before the generation batch lands
+    const star = await screen.findByRole(
+      'button',
+      { name: 'Favorite bulbasaur' },
+      { timeout: 15000 }
+    );
     expect(star).toHaveAttribute('aria-pressed', 'false');
     await user.click(star);
 
     expect(star).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('status')).toHaveTextContent('Added bulbasaur to Favorites');
-    expect(JSON.parse(localStorage.getItem('pokedex:favorites'))).toEqual([1]);
+    expect(JSON.parse(localStorage.getItem('pokedex:favorites')!)).toEqual([1]);
 
     // Desktop sidebar item shows the count
-    const menuItem = screen.getAllByRole('button', { name: /Favorites/ })[0];
+    const menuItem = screen.getAllByRole('button', { name: /Favorites/ })[0]!;
     expect(menuItem).toHaveTextContent('1');
     await user.click(menuItem);
 
@@ -93,7 +103,7 @@ describe('favorites', () => {
 
     await user.click(within(screen.getByRole('status')).getByRole('button', { name: 'Undo' }));
     expect(within(grid()).getByText('bulbasaur')).toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem('pokedex:favorites'))).toEqual([1]);
+    expect(JSON.parse(localStorage.getItem('pokedex:favorites')!)).toEqual([1]);
   });
 
   it('loads saved favorites from other generations without adding them to Browse', async () => {
@@ -105,7 +115,7 @@ describe('favorites', () => {
     await screen.findByRole('button', { name: 'Favorite bulbasaur' });
     await waitFor(() => expect(within(grid()).queryByText('turtwig')).not.toBeInTheDocument());
 
-    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]);
+    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]!);
     expect(await within(grid()).findByText('turtwig')).toBeInTheDocument();
     expect(within(grid()).queryByText('bulbasaur')).not.toBeInTheDocument();
   });
@@ -115,7 +125,7 @@ describe('favorites', () => {
     renderPokedex();
     await screen.findByRole('button', { name: 'Favorite bulbasaur' });
 
-    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]);
+    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]!);
     expect(screen.getByText('No favorites yet')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Browse Pokémon' }));
@@ -125,7 +135,7 @@ describe('favorites', () => {
 
 describe('offline', () => {
   afterEach(() => {
-    delete navigator.onLine;
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
     cleanup();
   });
 
@@ -138,7 +148,7 @@ describe('offline', () => {
     act(() => window.dispatchEvent(new Event('offline')));
     expect(screen.getByText(/You’re offline/)).toBeInTheDocument();
 
-    delete navigator.onLine;
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
     act(() => window.dispatchEvent(new Event('online')));
     expect(screen.queryByText(/You’re offline/)).not.toBeInTheDocument();
   });
@@ -178,7 +188,7 @@ describe('navigation', () => {
     renderPokedex();
     await screen.findByRole('button', { name: 'Favorite bulbasaur' });
 
-    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]);
+    await user.click(screen.getAllByRole('button', { name: /Favorites/ })[0]!);
     expect(window.location.search).toBe('?view=favorites');
 
     await goBack();
@@ -194,7 +204,7 @@ describe('navigation', () => {
     await waitFor(() => expect(dialog()).toHaveAccessibleName('turtwig'));
 
     // Nothing to step back to: closing just drops it from the URL
-    await userEvent.setup().click(within(dialog()).getByRole('button', { name: 'Close' }));
+    await userEvent.setup().click(within(dialog()!).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(dialog()).not.toBeInTheDocument());
     expect(window.location.search).toBe('?view=favorites');
   });
@@ -205,7 +215,7 @@ describe('navigation', () => {
     await user.click(await within(await screen.findByRole('main')).findByText('bulbasaur'));
     const lengthWithDetail = window.history.length;
 
-    await user.click(within(dialog()).getByRole('button', { name: 'Close' }));
+    await user.click(within(dialog()!).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(dialog()).not.toBeInTheDocument());
     expect(window.location.search).toBe('');
     expect(window.history.state.index).toBe(0);
@@ -219,7 +229,7 @@ describe('navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Gen I' }));
     expect(dialog()).toHaveAccessibleName('Choose generation');
-    await user.click(within(dialog()).getByRole('button', { name: /generation-iv/ }));
+    await user.click(within(dialog()!).getByRole('button', { name: /generation-iv/ }));
 
     await waitFor(() => expect(dialog()).not.toBeInTheDocument());
     expect(window.location.search).toBe('?gen=generation-iv');

@@ -1,21 +1,28 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, cleanup } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import pokeapi from '../../api/pokeapi';
+import type { Pokemon } from '../../types/pokeapi';
 import PokemonDetail from './PokemonDetail';
 
 vi.mock('../../api/pokeapi', () => ({ default: { get: vi.fn() } }));
 
-const type = (name) => ({ type: { name, url: `type/${name}` } });
-const stat = (name, base_stat) => ({ stat: { name }, base_stat });
-const move = (name, method = 'level-up') => ({
-  move: { name },
+const type = (name: string) => ({ type: { name, url: `type/${name}` } });
+const stat = (name: string, base_stat: number) => ({
+  stat: { name, url: `stat/${name}` },
+  base_stat,
+  effort: 0,
+});
+const move = (name: string, method = 'level-up') => ({
+  move: { name, url: `move/${name}` },
   version_group_details: [{ move_learn_method: { name: method } }],
 });
 
 const charmander = {
   id: 4,
   name: 'charmander',
+  height: 6,
+  weight: 85,
   types: [type('fire')],
   stats: [
     stat('hp', 39),
@@ -26,8 +33,8 @@ const charmander = {
     stat('speed', 65),
   ],
   abilities: [
-    { ability: { name: 'blaze' }, is_hidden: false },
-    { ability: { name: 'solar-power' }, is_hidden: true },
+    { ability: { name: 'blaze', url: 'ability/blaze' }, is_hidden: false, slot: 1 },
+    { ability: { name: 'solar-power', url: 'ability/solar-power' }, is_hidden: true, slot: 3 },
   ],
   // 25 moves, to check only the first 20 are listed
   moves: [
@@ -41,18 +48,20 @@ const charmander = {
     other: { 'official-artwork': { front_default: '/art/4.png' } },
   },
   species: { name: 'charmander', url: 'species/charmander' },
-};
+} as unknown as Pokemon;
 
 const rotom = {
   id: 479,
   name: 'rotom',
+  height: 3,
+  weight: 3,
   types: [type('electric'), type('ghost')],
   stats: [stat('hp', 50)],
-  abilities: [{ ability: { name: 'levitate' }, is_hidden: false }],
+  abilities: [{ ability: { name: 'levitate', url: 'ability/levitate' }, is_hidden: false, slot: 1 }],
   moves: [],
   sprites: { front_default: '/sprites/479.png' },
   species: { name: 'rotom', url: 'species/rotom' },
-};
+} as unknown as Pokemon;
 
 const rotomWash = {
   ...rotom,
@@ -60,35 +69,41 @@ const rotomWash = {
   name: 'rotom-wash',
   types: [type('electric'), type('water')],
   sprites: { front_default: '/sprites/10008.png' },
-};
+} as unknown as Pokemon;
 
 // grass/poison, like Bulbasaur: bug is 2x from grass but 0.5x from poison, so
 // it should net to 1x and not appear as either a weakness or a resistance
 const bulbasaur = {
   id: 1,
   name: 'bulbasaur',
+  height: 7,
+  weight: 69,
   types: [type('grass'), type('poison')],
   stats: [stat('hp', 45)],
-  abilities: [{ ability: { name: 'overgrow' }, is_hidden: false }],
+  abilities: [{ ability: { name: 'overgrow', url: 'ability/overgrow' }, is_hidden: false, slot: 1 }],
   moves: [],
   sprites: { front_default: '/sprites/1.png' },
   species: { name: 'bulbasaur', url: 'species/bulbasaur' },
-};
+} as unknown as Pokemon;
 
 // dragon/flying, like Dragonite: ice is 2x from both types, so it should be a
 // 4x weakness, not a plain 2x one; grass is 0.5x from both, for a 0.25x resistance
 const dragonite = {
   id: 149,
   name: 'dragonite',
+  height: 22,
+  weight: 2100,
   types: [type('dragon'), type('flying')],
   stats: [stat('hp', 91)],
-  abilities: [{ ability: { name: 'inner-focus' }, is_hidden: false }],
+  abilities: [
+    { ability: { name: 'inner-focus', url: 'ability/inner-focus' }, is_hidden: false, slot: 1 },
+  ],
   moves: [],
   sprites: { front_default: '/sprites/149.png' },
   species: { name: 'dragonite', url: 'species/dragonite' },
-};
+} as unknown as Pokemon;
 
-const relations = (double, half = [], none = []) => ({
+const relations = (double: string[], half: string[] = [], none: string[] = []) => ({
   damage_relations: {
     double_damage_from: double.map((name) => ({ name })),
     half_damage_from: half.map((name) => ({ name })),
@@ -96,22 +111,28 @@ const relations = (double, half = [], none = []) => ({
   },
 });
 
-const chain = (...names) => {
-  const build = ([name, ...rest]) => ({
-    species: { name },
-    evolves_to: rest.length ? [build(rest)] : [],
-  });
+type EvoNode = { species: { name: string }; evolves_to: EvoNode[] };
+const chain = (...names: string[]) => {
+  const build = (parts: string[]): EvoNode => {
+    const [name, ...rest] = parts;
+    return {
+      species: { name: name! },
+      evolves_to: rest.length ? [build(rest)] : [],
+    };
+  };
   return { chain: build(names) };
 };
 
-const responses = {
+const responses: Record<string, unknown> = {
   'species/charmander': {
     name: 'charmander',
+    url: 'species/charmander',
     evolution_chain: { url: 'evo/charmander' },
     varieties: [{ is_default: true, pokemon: { name: 'charmander', url: '/pokemon/charmander' } }],
   },
   'species/rotom': {
     name: 'rotom',
+    url: 'species/rotom',
     evolution_chain: { url: 'evo/rotom' },
     varieties: [
       { is_default: true, pokemon: { name: 'rotom', url: '/pokemon/rotom' } },
@@ -134,7 +155,7 @@ const responses = {
   'type/flying': relations(['electric', 'ice', 'rock'], ['fighting', 'bug', 'grass']),
 };
 
-const renderDetail = (pokemon = charmander) =>
+const renderDetail = (pokemon: Pokemon = charmander) =>
   render(
     <PokemonDetail
       pokemon={pokemon}
@@ -145,9 +166,9 @@ const renderDetail = (pokemon = charmander) =>
     />
   );
 
-const openTab = (user, name) => user.click(screen.getByRole('button', { name }));
-const pillsUnder = (heading) =>
-  within(screen.getByText(heading).closest('.effectiveness-group'))
+const openTab = (user: UserEvent, name: string) => user.click(screen.getByRole('button', { name }));
+const pillsUnder = (heading: string) =>
+  within(screen.getByText(heading).closest('.effectiveness-group')!)
     .getAllByText(/./, { selector: '.type-pill' })
     .map((el) => el.textContent);
 
@@ -157,10 +178,10 @@ describe('PokemonDetail', () => {
     Element.prototype.scrollIntoView = () => {};
   });
   beforeEach(() => {
-    pokeapi.get.mockReset();
-    pokeapi.get.mockImplementation(async (url) => {
+    vi.mocked(pokeapi.get).mockReset();
+    vi.mocked(pokeapi.get).mockImplementation(async (url: string) => {
       if (!(url in responses)) throw new Error(`Unexpected request: ${url}`);
-      return { data: responses[url] };
+      return { data: responses[url] } as Awaited<ReturnType<typeof pokeapi.get>>;
     });
   });
   afterEach(cleanup);
@@ -315,7 +336,10 @@ describe('PokemonDetail', () => {
   it('uses species data that’s already loaded instead of fetching it again', async () => {
     const user = userEvent.setup();
     // Pokedex.js hands over the fully expanded species, not a {name, url} ref
-    renderDetail({ ...charmander, species: responses['species/charmander'] });
+    renderDetail({
+      ...charmander,
+      species: responses['species/charmander'] as Pokemon['species'],
+    });
 
     await openTab(user, 'Evolution');
     await screen.findByText('charizard');
@@ -324,7 +348,7 @@ describe('PokemonDetail', () => {
 
   it('says so when evolution or effectiveness data can’t be loaded', async () => {
     const user = userEvent.setup();
-    pokeapi.get.mockRejectedValue(new Error('network'));
+    vi.mocked(pokeapi.get).mockRejectedValue(new Error('network'));
     renderDetail();
 
     await openTab(user, 'Evolution');

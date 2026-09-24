@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, type MouseEvent } from 'react';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { FiShare2 } from 'react-icons/fi';
 import Modal from '../Modal/Modal';
@@ -6,10 +6,68 @@ import './PokemonDetail.css';
 import { getTypeColor, getTypeTextColor } from '../../constants';
 import pokeapi from '../../api/pokeapi';
 import { devWarn } from '../../logger';
+import type {
+  Pokemon,
+  PokemonSpecies,
+  SpeciesRef,
+  NamedAPIResource,
+  TypeDamageRelations,
+  ChainLink,
+  PokemonSprites,
+} from '../../types/pokeapi';
+
+type SpriteVariant = { label: string; url: string };
+
+/** Sprites shape with optional variants PokeAPI may omit. */
+type DetailSprites = PokemonSprites & {
+  front_shiny?: string | null;
+  back_default?: string | null;
+  back_shiny?: string | null;
+  other?: PokemonSprites['other'] & {
+    'official-artwork'?: {
+      front_default?: string | null;
+      front_shiny?: string | null;
+    };
+    home?: {
+      front_default?: string | null;
+      front_shiny?: string | null;
+    };
+  };
+};
+
+type MoveLearnDetail = {
+  move_learn_method: NamedAPIResource;
+};
+
+type PokemonMoveDetail = {
+  move: NamedAPIResource;
+  version_group_details: MoveLearnDetail[];
+};
+
+type EffectivenessGroups = {
+  four: string[];
+  two: string[];
+  half: string[];
+  quarter: string[];
+  zero: string[];
+};
+
+type EffectivenessKey = keyof EffectivenessGroups;
+
+type EvolutionStage = { name: string; stage: number };
+
+type FormEntry = {
+  name: string;
+  url: string;
+  isDefault: boolean;
+  label: string;
+};
+
+type TabDef = { id: string; label: string };
 
 // Build the list of sprite variants PokeAPI provides for a Pokemon,
 // skipping any that are missing (not every Pokémon or form has them all).
-function getSpriteVariants(sprites) {
+function getSpriteVariants(sprites: DetailSprites | null | undefined): SpriteVariant[] {
   if (!sprites) return [];
   const candidates = [
     { label: 'Default', url: sprites.front_default },
@@ -21,16 +79,17 @@ function getSpriteVariants(sprites) {
     { label: 'Home', url: sprites.other?.home?.front_default },
     { label: 'Home Shiny', url: sprites.other?.home?.front_shiny },
   ];
-  return candidates.filter((c) => !!c.url);
+  return candidates.filter((c): c is SpriteVariant => !!c.url);
 }
 
 // Prefer the high-res official artwork for the hero image; the 96px
 // front_default sprite looks blurry when scaled up.
-function getDefaultSprite(sprites) {
+function getDefaultSprite(sprites: DetailSprites): string | undefined {
   return (
     sprites.other?.['official-artwork']?.front_default ||
     sprites.front_default ||
-    getSpriteVariants(sprites)[0]?.url
+    getSpriteVariants(sprites)[0]?.url ||
+    undefined
   );
 }
 
@@ -38,9 +97,9 @@ function getDefaultSprite(sprites) {
 // attacking type (their product, not a union), so dual-type Pokémon get the
 // right 4x/2x/0.5x/0.25x/0x groupings instead of listing a type as both a
 // weakness and a resistance when it actually cancels out to 1x.
-function combineEffectiveness(relationsList) {
-  const multiplier = new Map();
-  const apply = (types, factor) =>
+function combineEffectiveness(relationsList: TypeDamageRelations[]): EffectivenessGroups {
+  const multiplier = new Map<string, number>();
+  const apply = (types: NamedAPIResource[], factor: number) =>
     types.forEach(({ name }) => multiplier.set(name, (multiplier.get(name) ?? 1) * factor));
   relationsList.forEach(({ double_damage_from, half_damage_from, no_damage_from }) => {
     apply(double_damage_from, 2);
@@ -48,8 +107,14 @@ function combineEffectiveness(relationsList) {
     apply(no_damage_from, 0);
   });
 
-  const groups = { four: [], two: [], half: [], quarter: [], zero: [] };
-  const byMultiplier = { 4: 'four', 2: 'two', 0.5: 'half', 0.25: 'quarter', 0: 'zero' };
+  const groups: EffectivenessGroups = { four: [], two: [], half: [], quarter: [], zero: [] };
+  const byMultiplier: Record<number, EffectivenessKey> = {
+    4: 'four',
+    2: 'two',
+    0.5: 'half',
+    0.25: 'quarter',
+    0: 'zero',
+  };
   for (const [name, factor] of multiplier) {
     const group = byMultiplier[factor];
     // 1x (a weakness from one type cancelled by a resistance from the other)
@@ -61,7 +126,7 @@ function combineEffectiveness(relationsList) {
 
 // Turn a variety name like "giratina-origin" into a short label like "Origin",
 // stripping the shared species name prefix (e.g. "giratina-").
-function getFormLabel(varietyName, speciesName) {
+function getFormLabel(varietyName: string, speciesName: string) {
   if (varietyName === speciesName) return 'Default';
   const prefix = `${speciesName}-`;
   const suffix = varietyName.startsWith(prefix) ? varietyName.slice(prefix.length) : varietyName;
@@ -72,7 +137,7 @@ function getFormLabel(varietyName, speciesName) {
 }
 
 // Order and labels for the groups combineEffectiveness produces
-const EFFECTIVENESS_GROUPS = [
+const EFFECTIVENESS_GROUPS: { key: EffectivenessKey; className: string; title: string }[] = [
   { key: 'four', className: 'weak', title: 'Weak Against (4x damage)' },
   { key: 'two', className: 'weak', title: 'Weak Against (2x damage)' },
   { key: 'half', className: 'resistant', title: 'Resistant To (0.5x damage)' },
@@ -80,19 +145,29 @@ const EFFECTIVENESS_GROUPS = [
   { key: 'zero', className: 'immune', title: 'Immune To (0x damage)' },
 ];
 
-function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose }) {
+type Props = {
+  pokemon: Pokemon;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onShare: () => void;
+  onClose: () => void;
+};
+
+function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose }: Props) {
   const [displayedPokemon, setDisplayedPokemon] = useState(pokemon);
-  const [forms, setForms] = useState([]);
+  const [forms, setForms] = useState<FormEntry[]>([]);
   const [formLoading, setFormLoading] = useState(false);
-  const [evolution, setEvolution] = useState([]);
+  const [evolution, setEvolution] = useState<EvolutionStage[]>([]);
   const [evolutionLoading, setEvolutionLoading] = useState(true);
-  const [typeEffectiveness, setTypeEffectiveness] = useState({});
+  const [typeEffectiveness, setTypeEffectiveness] = useState<Partial<EffectivenessGroups>>({});
   const [effectivenessLoading, setEffectivenessLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('stats');
-  const spriteVariants = getSpriteVariants(displayedPokemon.sprites);
-  const [activeSprite, setActiveSprite] = useState(getDefaultSprite(displayedPokemon.sprites));
+  const spriteVariants = getSpriteVariants(displayedPokemon.sprites as DetailSprites);
+  const [activeSprite, setActiveSprite] = useState<string | undefined>(
+    getDefaultSprite(displayedPokemon.sprites as DetailSprites)
+  );
 
-  const tabs = [
+  const tabs: TabDef[] = [
     { id: 'stats', label: 'Stats' },
     { id: 'abilities', label: 'Abilities' },
     { id: 'evolution', label: 'Evolution' },
@@ -100,11 +175,11 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
     { id: 'effectiveness', label: 'Effectiveness' },
     spriteVariants.length > 1 && { id: 'sprites', label: 'Sprites' },
     forms.length > 1 && { id: 'forms', label: 'Forms' },
-  ].filter(Boolean);
+  ].filter((t): t is TabDef => Boolean(t));
 
   // Fade whichever edge of the tab row has more tabs scrolled out of view,
   // so tabs past the sheet's edge (Effectiveness, Sprites, Forms) are discoverable
-  const tabsRef = useRef(null);
+  const tabsRef = useRef<HTMLDivElement | null>(null);
   const [tabFade, setTabFade] = useState({ left: false, right: false });
   const tabCount = tabs.length;
   useEffect(() => {
@@ -132,7 +207,7 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
 
   // Reset the selected sprite whenever the displayed Pokemon (or form) changes
   useEffect(() => {
-    setActiveSprite(getDefaultSprite(displayedPokemon.sprites));
+    setActiveSprite(getDefaultSprite(displayedPokemon.sprites as DetailSprites));
   }, [displayedPokemon]);
 
   // Evolution chain and alternate forms are tied to the species, which is shared
@@ -149,14 +224,16 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
         // Pokedex.js already replaces `species` with the fully-expanded species
         // resource (for generation grouping) - that object has no self `.url`,
         // so only fetch by URL when species is still just a bare {name, url} ref.
-        const species = pokemon.species.evolution_chain
-          ? pokemon.species
-          : (await pokeapi.get(pokemon.species.url)).data;
+        const speciesField = pokemon.species;
+        const species: PokemonSpecies =
+          'evolution_chain' in speciesField && speciesField.evolution_chain
+            ? (speciesField as PokemonSpecies)
+            : (await pokeapi.get<PokemonSpecies>((speciesField as SpeciesRef).url)).data;
 
-        const evoRes = await pokeapi.get(species.evolution_chain.url);
+        const evoRes = await pokeapi.get<{ chain: ChainLink }>(species.evolution_chain!.url);
         if (ignore) return;
-        const chainList = [];
-        function traverse(node, stage = 1) {
+        const chainList: EvolutionStage[] = [];
+        function traverse(node: ChainLink, stage = 1) {
           chainList.push({ name: node.species.name, stage });
           node.evolves_to.forEach((n) => traverse(n, stage + 1));
         }
@@ -194,7 +271,9 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
       try {
         const relations = await Promise.all(
           displayedPokemon.types.map((t) =>
-            pokeapi.get(t.type.url).then((r) => r.data.damage_relations)
+            pokeapi
+              .get<{ damage_relations: TypeDamageRelations }>(t.type.url)
+              .then((r) => r.data.damage_relations)
           )
         );
         if (ignore) return;
@@ -220,11 +299,11 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
     pokemonRef.current = pokemon;
   }, [pokemon]);
 
-  const handleFormSelect = async (form) => {
+  const handleFormSelect = async (form: FormEntry) => {
     if (form.name === displayedPokemon.name || formLoading) return;
     setFormLoading(true);
     try {
-      const res = await pokeapi.get(form.url);
+      const res = await pokeapi.get<Pokemon>(form.url);
       if (pokemonRef.current !== pokemon) return;
       setDisplayedPokemon({ ...res.data, species: pokemon.species });
     } catch {
@@ -234,7 +313,7 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
     }
   };
 
-  const getStatColor = (stat) => {
+  const getStatColor = (stat: number) => {
     if (stat >= 100) return '#4CAF50';
     if (stat >= 70) return '#8BC34A';
     if (stat >= 50) return '#FFC107';
@@ -244,6 +323,8 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
   const calculateTotalStats = () => {
     return displayedPokemon.stats.reduce((total, stat) => total + stat.base_stat, 0);
   };
+
+  const moves = displayedPokemon.moves as PokemonMoveDetail[];
 
   return (
     <Modal label={displayedPokemon.name} className="pokemon-detail-sheet" onClose={onClose}>
@@ -310,7 +391,7 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
                 key={id}
                 type="button"
                 className={`tab ${activeTab === id ? 'active' : ''}`}
-                onClick={(e) => {
+                onClick={(e: MouseEvent<HTMLButtonElement>) => {
                   setActiveTab(id);
                   e.currentTarget.scrollIntoView({
                     block: 'nearest',
@@ -386,20 +467,23 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
           {activeTab === 'moves' && (
             <div className="moves-section">
               <div className="moves-list">
-                {displayedPokemon.moves.slice(0, 20).map((m) => (
-                  <div key={m.move.name} className="move-item">
-                    <span className="move-name">{m.move.name.replaceAll('-', ' ')}</span>
-                    {m.version_group_details[0] && (
-                      <span className="move-learn-method">
-                        {m.version_group_details[0].move_learn_method.name.replaceAll('-', ' ')}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {moves.slice(0, 20).map((m) => {
+                  const learnDetail = m.version_group_details[0];
+                  return (
+                    <div key={m.move.name} className="move-item">
+                      <span className="move-name">{m.move.name.replaceAll('-', ' ')}</span>
+                      {learnDetail && (
+                        <span className="move-learn-method">
+                          {learnDetail.move_learn_method.name.replaceAll('-', ' ')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {displayedPokemon.moves.length > 20 && (
+              {moves.length > 20 && (
                 <div className="moves-note">
-                  Showing first 20 of {displayedPokemon.moves.length} moves
+                  Showing first 20 of {moves.length} moves
                 </div>
               )}
             </div>
@@ -414,11 +498,11 @@ function PokemonDetail({ pokemon, isFavorite, onToggleFavorite, onShare, onClose
               ) : (
                 EFFECTIVENESS_GROUPS.map(
                   ({ key, className, title }) =>
-                    typeEffectiveness[key]?.length > 0 && (
+                    (typeEffectiveness[key]?.length ?? 0) > 0 && (
                       <div key={key} className="effectiveness-group">
                         <h4 className={`effectiveness-title ${className}`}>{title}</h4>
                         <div className="type-pills">
-                          {typeEffectiveness[key].map((type) => (
+                          {typeEffectiveness[key]!.map((type) => (
                             <span
                               key={type}
                               className="type-pill"

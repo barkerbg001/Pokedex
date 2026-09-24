@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEvent, type PointerEvent } from 'react';
 import { FiX } from 'react-icons/fi';
 import { vibrate } from '../../haptics';
 import './Modal.css';
@@ -12,15 +12,22 @@ const DISMISS_VELOCITY = 0.5;
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+type Props = {
+  label: string;
+  className?: string;
+  onClose: () => void;
+  children: ReactNode | ((close: () => void) => ReactNode);
+};
+
 // Shared modal shell: a right-side panel on desktop and a swipe-to-dismiss
 // bottom sheet on mobile. `children` may be a function that receives a
 // `close` callback, so content can dismiss the modal with its exit animation.
-function Modal({ label, className = '', onClose, children }) {
+function Modal({ label, className = '', onClose, children }: Props) {
   const [closing, setClosing] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const contentRef = useRef(null);
-  const dragRef = useRef(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ startY: number; startTime: number } | null>(null);
   const crossedThresholdRef = useRef(false);
 
   const requestClose = useCallback(() => {
@@ -38,21 +45,22 @@ function Modal({ label, className = '', onClose, children }) {
   // Close on Escape, keep Tab inside the dialog, lock background scrolling,
   // and move focus into the dialog (returning it to the trigger on close)
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         requestClose();
         return;
       }
       if (e.key !== 'Tab' || !contentRef.current) return;
       const focusable = [...contentRef.current.querySelectorAll(FOCUSABLE)].filter(
-        (el) => el.tabIndex >= 0 && el.getClientRects().length > 0
+        (el): el is HTMLElement =>
+          el instanceof HTMLElement && el.tabIndex >= 0 && el.getClientRects().length > 0
       );
       if (focusable.length === 0) {
         e.preventDefault();
         return;
       }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
       const inside = contentRef.current.contains(document.activeElement);
       if (
         e.shiftKey &&
@@ -68,7 +76,7 @@ function Modal({ label, className = '', onClose, children }) {
       }
     };
     const previousOverflow = document.body.style.overflow;
-    const previousFocus = document.activeElement;
+    const previousFocus = document.activeElement as HTMLElement | null;
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
     contentRef.current?.focus();
@@ -79,22 +87,23 @@ function Modal({ label, className = '', onClose, children }) {
     };
   }, [requestClose]);
 
-  const handleBackdropClick = (e) => {
+  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) requestClose();
   };
 
   // Dragging starts from the handle or any element marked data-sheet-drag
   // (e.g. a sheet's header), but never from a button inside it.
-  const handlePointerDown = (e) => {
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (!window.matchMedia(MOBILE_QUERY).matches) return;
-    if (!e.target.closest('[data-sheet-drag]') || e.target.closest('button')) return;
+    const target = e.target as Element;
+    if (!target.closest('[data-sheet-drag]') || target.closest('button')) return;
     dragRef.current = { startY: e.clientY, startTime: e.timeStamp };
     crossedThresholdRef.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
   };
 
-  const handlePointerMove = (e) => {
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
     const distance = Math.max(0, e.clientY - dragRef.current.startY);
     setDragOffset(distance);
@@ -106,7 +115,7 @@ function Modal({ label, className = '', onClose, children }) {
     }
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
     const distance = Math.max(0, e.clientY - dragRef.current.startY);
     const velocity = distance / Math.max(1, e.timeStamp - dragRef.current.startTime);

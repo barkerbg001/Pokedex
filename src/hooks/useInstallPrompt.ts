@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { InstallPromptState } from '../types/pokeapi';
 
 // iOS browsers never fire `beforeinstallprompt`; installing is manual via the
 // Share sheet. iPadOS reports itself as a Mac, so also check for touch.
@@ -9,8 +10,8 @@ const isIos =
 // Captures the browser's install prompt so it can be triggered from a button.
 // Mount this near the app root: `beforeinstallprompt` fires once, early, and
 // is missed by anything that mounts later (e.g. the Settings screen).
-function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+function useInstallPrompt(): InstallPromptState {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(
     () => window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone
   );
@@ -18,12 +19,12 @@ function useInstallPrompt() {
   useEffect(() => {
     if (isInstalled) return;
 
-    const handleBeforeInstallPrompt = (e) => {
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent): void => {
       // Prevent the mini-infobar; we show our own button instead
       e.preventDefault();
       setDeferredPrompt(e);
     };
-    const handleAppInstalled = () => {
+    const handleAppInstalled = (): void => {
       setIsInstalled(true);
       setDeferredPrompt(null);
     };
@@ -36,7 +37,7 @@ function useInstallPrompt() {
     };
   }, [isInstalled]);
 
-  const promptInstall = async () => {
+  const promptInstall = async (): Promise<void> => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     await deferredPrompt.userChoice;

@@ -1,6 +1,9 @@
+import type { Metric } from 'web-vitals';
 import { devWarn } from './logger';
 
-const reportWebVitals = (onPerfEntry) => {
+type ReportHandler = (metric: Metric) => void;
+
+const reportWebVitals = (onPerfEntry?: ReportHandler): void => {
   if (onPerfEntry && onPerfEntry instanceof Function) {
     import('web-vitals')
       .then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
@@ -10,7 +13,7 @@ const reportWebVitals = (onPerfEntry) => {
         onLCP(onPerfEntry);
         onTTFB(onPerfEntry);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         devWarn('Web vitals could not be loaded:', error);
       });
   }
